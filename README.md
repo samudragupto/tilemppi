@@ -27,6 +27,20 @@ into **register- and SRAM-resident tile blocks (`TILE_K = 128`)**. Intermediate 
 
 ---
 
+## Live 3D Playground Demo & Screenshots
+
+Real-time capture from `tilemppi serve` running **16,384 parallel universes** (`H = 32`, `TORCH_GPU` on RTX 4060 Laptop GPU, 100% locked inside the 32 MB L2 cache) streaming binary `TMPI` frames over WebSocket to the React + Three.js WebGL2 playground:
+
+![TileMPPI 3D Playground Demo](docs/assets/tilemppi_demo.gif)
+
+> Full-resolution H.264 video: [`docs/assets/tilemppi_demo.mp4`](docs/assets/tilemppi_demo.mp4)
+
+| 6-DoF SE(3) Quadrotor (`obstacle_slalom`) | 12-DoF Articulated Quadruped (`Shove / Impulse Kick`) | 4-Drone Coordinated Swarm |
+| :---: | :---: | :---: |
+| ![Quadrotor 6-DoF](docs/assets/screenshot_quadrotor.png) | ![Quadruped 12-DoF](docs/assets/screenshot_quadruped.png) | ![4-Drone Swarm](docs/assets/screenshot_swarm.png) |
+
+---
+
 ## Benchmark Highlights (RTX 4060 Laptop GPU, `sm_89`)
 
 Measured directly on an **AMD Ryzen 7 7840HS** + **NVIDIA GeForce RTX 4060 Laptop GPU** (Windows 11, CUDA Graph-captured `torch_gpu` backend, `H = 32`):
