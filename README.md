@@ -14,7 +14,7 @@
 
 Model Predictive Path Integral (MPPI) control is remarkably effective at agile, contact-rich robotics—until you try to scale it up on a laptop or edge GPU.
 
-If you write a standard PyTorch MPPI rollout for **$K = 16,384$** trajectories over a **$H = 32$** horizon on a 32-DoF robot, PyTorch materializes intermediate RK4 stages, state histories, noise buffers, and 3D Signed Distance Function (SDF) queries in global VRAM. That adds up to **435–900 MB per control step**—overwhelmed on a 128-bit memory bus like the **NVIDIA GeForce RTX 4060 Laptop GPU** (`256 GB/s` GDDR6, `32 MB` L2 cache).
+If you write a standard PyTorch MPPI rollout for **$K = 16,384$** trajectories over a **$H = 32$** horizon on a 32-DoF robot, PyTorch materializes intermediate RK4 stages, state histories, noise buffers, and 3D Signed Distance Function (SDF) queries in global VRAM. That adds up to **435–944 MB per control step**—overwhelmed on a 128-bit memory bus like the **NVIDIA GeForce RTX 4060 Laptop GPU** (`256 GB/s` GDDR6, `32 MB` L2 cache).
 
 **TileMPPI** flips that bottleneck on its head. Written around NVIDIA's **`cuTile` (`cuda.tile`)** tile-based programming model, it fuses:
 
@@ -23,7 +23,7 @@ If you write a standard PyTorch MPPI rollout for **$K = 16,384$** trajectories o
 3. Batched Tensor Core forward kinematics and Jacobian-transpose torques (`ct.matmul` / `ct.mma`)
 4. Predictive dynamic **3D SDF** obstacle collision barriers & **CVaR** tail-risk penalties
 
-into **register- and SRAM-resident tile blocks (`TILE_K = 128`)**. Intermediate states never touch global VRAM. The entire working set shrinks to **4.15–16.18 MB**—fitting **100% inside the RTX 4060's 32 MB L2 cache** and cutting global memory traffic by **47×–259×**.
+into **register- and SRAM-resident tile blocks (`TILE_K = 128`)**. Intermediate states never touch global VRAM. The entire working set shrinks to **0.18–8.57 MB** (and **4.15 MB** on the measured Quadrotor $K = 16,384$ benchmark)—fitting **100% inside the RTX 4060's 32 MB L2 cache** and cutting global memory traffic by **104.8×** (and up to **5,120×** with inline register noise).
 
 ---
 
@@ -81,6 +81,51 @@ Every kernel under [`src/tilemppi/kernels/cutile/`](src/tilemppi/kernels/cutile/
 
 - **3 Robots:** 6-DoF SE(3) Quadrotor, 12-DoF Articulated Quadruped, 4-Drone Coordinated 3D Swarm.
 - **5 Scenarios:** `obstacle_slalom`, `moving_gates` (fly-through torus rings), `asteroid_storm`, `kick_recovery` (scheduled wrench impulse), and `u_trap_maze` (solved by coupling CPU 3D voxel A* waypoints with GPU MPPI).
+
+---
+
+## How TileMPPI Works (Architecture & Core Equations)
+
+```mermaid
+flowchart LR
+    CPU["Ryzen 7 CPU: 3D A* + Obstacle Table + FastAPI WS"] -->|"2 KB Tile Load"| L2["GPU 32 MB L2 Cache (U, Obstacles, Costs S, Vis)"]
+    L2 -->|"TILE_K = 128"| SRAM["SM Registers & SRAM (Philox OU + RK4 + SDF + CVaR)"]
+    SRAM -->|"64 KB Costs"| REDUCE["Log-Sum-Exp + ct.matmul Update"]
+    REDUCE -->|"Updated U*"| L2
+    L2 -->|"Binary TMPI Frame"| UI["120 FPS Three.js WebGL2 Playground"]
+```
+
+At every control step, TileMPPI evaluates $K$ parallel futures over horizon $H$ in four fused stages:
+
+1. **Colored Ornstein-Uhlenbeck Perturbations** (stateless Philox-4x + Box-Muller in registers):
+
+$$
+\boldsymbol{\epsilon}_{k,0} = \boldsymbol{\sigma} \odot \mathbf{z}_{k,0}, \qquad \boldsymbol{\epsilon}_{k,t} = \rho_{\mathrm{OU}} \boldsymbol{\epsilon}_{k,t-1} + \sqrt{1 - \rho_{\mathrm{OU}}^2}\left(\boldsymbol{\sigma} \odot \mathbf{z}_{k,t}\right), \qquad \mathbf{z}_{k,t} \sim \mathcal{N}(\mathbf{0}, \mathbf{I}_{D_u})
+$$
+
+2. **RK4 Tile Integration on $SO(3)$** with clamped control $\mathbf{u}_{k,t} = \mathrm{clip}(\mathbf{u}_t^{\mathrm{nom}} + \boldsymbol{\epsilon}_{k,t}, \mathbf{u}_{\min}, \mathbf{u}_{\max})$:
+
+$$
+\mathbf{x}_{k,t+1} = \Pi_{\mathcal{M}}\left(\mathbf{x}_{k,t} + \frac{\Delta t}{6}\left(\mathbf{k}_1 + 2\mathbf{k}_2 + 2\mathbf{k}_3 + \mathbf{k}_4\right)\right)
+$$
+
+3. **Uncertainty-Inflated 3D SDF Barrier & CVaR Tail-Risk Cost** at $\tau_t = (t + 1)\Delta t$, with $\sigma_{\mathrm{CVaR}}(\tau_t) = 0.06\,\alpha_{\mathrm{CVaR}}\,w_{\mathrm{CVaR}}\sqrt{\tau_t}$ and $d_{\min, k} = \min_t d_{k,t}$:
+
+$$
+\phi_{\mathrm{coll}}(d_{k,t}, \tau_t) = w_{\mathrm{hard}} \max\left(0,\; r_{\mathrm{robot}} + m_{\mathrm{safe}} + \sigma_{\mathrm{CVaR}}(\tau_t) - d_{k,t}\right)^2 + w_{\mathrm{soft}} \exp\left(-\alpha (d_{k,t} - r_{\mathrm{robot}})\right)
+$$
+
+$$
+S_k = \phi_{\mathrm{term}}(\mathbf{x}_{k,H}, \mathbf{g}_{\mathrm{wp}}) + \phi_{\mathrm{CVaR}}(d_{\min, k}) + \sum_{t=0}^{H-1} \left(\ell_{\mathrm{track}}(\mathbf{x}_{k,t}, \mathbf{g}_{\mathrm{wp}}, \mathbf{g}) + \phi_{\mathrm{coll}}(d_{k,t}, \tau_t) + w_u \|\mathbf{u}_{k,t} - \mathbf{u}_{\mathrm{hover}}\|_2^2 + w_{\Delta u} \|\mathbf{u}_{k,t} - \mathbf{u}_{k,t-1}\|_2^2\right)
+$$
+
+4. **Log-Sum-Exp Importance Weighting & Savitzky-Golay Update** ($\beta = \min_k S_k$):
+
+$$
+w_k = \frac{\exp\left(-\min\left(\frac{S_k - \beta}{\lambda},\; 60\right)\right)}{\sum_{j=0}^{K-1} \exp\left(-\min\left(\frac{S_j - \beta}{\lambda},\; 60\right)\right)}, \qquad \mathbf{U}^{\mathrm{new}} = \mathrm{clip}\left(\mathcal{S}_{\mathrm{SG}}\left(\mathrm{clip}\left(\mathbf{U}^{\mathrm{nom}} + \sum_{k=0}^{K-1} w_k \boldsymbol{\epsilon}_k,\; \mathbf{u}_{\min},\; \mathbf{u}_{\max}\right)\right),\; \mathbf{u}_{\min},\; \mathbf{u}_{\max}\right)
+$$
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the complete 32 MB L2 memory breakdown and derivations.
 
 ---
 

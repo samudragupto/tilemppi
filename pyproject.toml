@@ -10,7 +10,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
 authors = [
-    { name = "TileMPPI Contributors" },
+    { name = "Arrhat Nag", email = "arrhatnag1@gmail.com" },
 ]
 keywords = [
     "robotics",
