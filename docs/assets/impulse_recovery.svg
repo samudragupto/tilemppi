@@ -1,25 +1,48 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 440" width="860" height="440">
-  <rect width="100%" height="100%" fill="#070b19" rx="12"/>
-  <text x="40" y="38" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="bold">Closed-Loop Impulse Shove Disturbance Rejection &amp; Obstacle Clearance</text>
-  <text x="40" y="60" fill="#94a3b8" font-family="Segoe UI, Arial, sans-serif" font-size="12">External Lateral/Rotational Wrench Impulse Injected at Step 8 -> Rapid Attitude &amp; Trajectory Recovery</text>
-  <line x1="80" y1="360" x2="810" y2="360" stroke="#334155" stroke-width="1.5"/>
-  <line x1="80" y1="90" x2="80" y2="360" stroke="#334155" stroke-width="1.5"/>
-  <rect x="200.7" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <rect x="215.9" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <rect x="231.1" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <rect x="246.3" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <rect x="352.8" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <rect x="368.0" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <rect x="383.3" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <rect x="398.5" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
-  <polyline fill="none" stroke="#f43f5e" stroke-width="2.8" points="85.0,347.2 100.2,338.0 115.4,323.1 130.6,305.4 145.9,285.0 161.1,263.6 176.3,243.4 191.5,224.1 206.7,206.6 221.9,192.1 237.1,182.0 252.3,174.7 267.6,170.4 282.8,171.5 298.0,177.1 313.2,183.5 328.4,190.1 343.6,196.6 358.8,201.9 374.0,209.3 389.3,219.8 404.5,226.4 419.7,228.8 434.9,229.4 450.1,224.1 465.3,212.4 480.5,197.7 495.7,182.4 511.0,167.8 526.2,156.3 541.4,150.0 556.6,151.4 571.8,159.8 587.0,170.2 602.2,178.4 617.4,186.4 632.7,198.1 647.9,215.9 663.1,237.1 678.3,258.0 693.5,273.3 708.7,280.7 723.9,283.0 739.1,282.0 754.4,280.1 769.6,281.0 784.8,285.4 800.0,293.5"/>
-  <polyline fill="none" stroke="#00f5d4" stroke-width="2.8" points="85.0,150.0 100.2,150.0 115.4,150.0 130.6,150.1 145.9,150.3 161.1,150.7 176.3,151.4 191.5,152.3 206.7,153.8 221.9,155.9 237.1,158.7 252.3,162.2 267.6,166.3 282.8,170.9 298.0,175.8 313.2,181.1 328.4,186.6 343.6,192.2 358.8,197.9 374.0,204.0 389.3,210.3 404.5,216.7 419.7,223.2 434.9,229.6 450.1,236.0 465.3,242.2 480.5,248.2 495.7,254.0 511.0,259.4 526.2,264.5 541.4,269.2 556.6,273.7 571.8,277.9 587.0,281.8 602.2,285.6 617.4,289.2 632.7,292.6 647.9,295.7 663.1,298.6 678.3,301.1 693.5,303.4 708.7,305.6 723.9,307.6 739.1,309.5 754.4,311.4 769.6,313.2 784.8,314.8 800.0,316.4"/>
-  <polyline fill="none" stroke="#10b981" stroke-width="2.2" stroke-dasharray="5,4" points="85.0,181.7 100.2,181.7 115.4,181.8 130.6,181.9 145.9,182.2 161.1,182.7 176.3,183.4 191.5,184.5 206.7,186.1 221.9,188.6 237.1,192.0 252.3,196.2 267.6,201.0 282.8,206.0 298.0,211.2 313.2,216.5 328.4,221.8 343.6,227.2 358.8,232.9 374.0,239.1 389.3,245.8 404.5,253.1 419.7,260.5 434.9,267.9 450.1,275.1 465.3,282.1 480.5,288.7 495.7,294.8 511.0,300.2 526.2,304.9 541.4,308.5 556.6,311.2 571.8,313.0 587.0,314.1 602.2,314.8 617.4,315.1 632.7,315.1 647.9,314.9 663.1,314.5 678.3,313.9 693.5,313.2 708.7,312.4 723.9,311.5 739.1,310.6 754.4,309.8 769.6,308.9 784.8,308.0 800.0,307.1"/>
-  <rect x="480" y="34" width="12" height="12" fill="#f43f5e" rx="2"/>
-  <text x="498" y="44" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Attitude Tilt (deg)</text>
-  <rect x="615" y="34" width="12" height="12" fill="#00f5d4" rx="2"/>
-  <text x="633" y="44" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Goal Distance Error (m)</text>
-  <rect x="480" y="54" width="12" height="12" fill="#10b981" rx="2"/>
-  <text x="498" y="64" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Min SDF Obstacle Clearance (m)</text>
-  <text x="445" y="398" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12" text-anchor="middle">Simulation Control Steps (dt = 25 ms, Red Band = Active Wrench Shove)</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480" width="920" height="480">
+  <rect width="100%" height="100%" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="45" y="38" fill="#0f172a" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="18" font-weight="700">Closed-Loop Impulse Shove Disturbance Rejection &amp; SDF Clearance</text>
+  <text x="45" y="60" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5">External wrench impulse injected at Step 8 (shaded band) followed by active stabilization &amp; collision avoidance</text>
+  <line x1="45" y1="84" x2="72" y2="84" stroke="#e11d48" stroke-width="2.8"/>
+  <text x="80" y="88" fill="#334155" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600">Attitude Tilt (deg, Left)</text>
+  <line x1="255" y1="84" x2="282" y2="84" stroke="#0284c7" stroke-width="2.8"/>
+  <text x="290" y="88" fill="#334155" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600">Goal Distance Error (m, Right)</text>
+  <line x1="505" y1="84" x2="532" y2="84" stroke="#059669" stroke-width="2.5" stroke-dasharray="6,4"/>
+  <text x="540" y="88" fill="#334155" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600">Min SDF Clearance (m, Right)</text>
+  <line x1="95.0" y1="395.0" x2="825.0" y2="395.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="85.0" y="399.0" fill="#be123c" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">0°</text>
+  <text x="835.0" y="399.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">0.00 m</text>
+  <line x1="95.0" y1="327.5" x2="825.0" y2="327.5" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="85.0" y="331.5" fill="#be123c" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">13°</text>
+  <text x="835.0" y="331.5" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">0.59 m</text>
+  <line x1="95.0" y1="260.0" x2="825.0" y2="260.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="85.0" y="264.0" fill="#be123c" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">27°</text>
+  <text x="835.0" y="264.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">1.18 m</text>
+  <line x1="95.0" y1="192.5" x2="825.0" y2="192.5" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="85.0" y="196.5" fill="#be123c" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">40°</text>
+  <text x="835.0" y="196.5" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">1.77 m</text>
+  <line x1="95.0" y1="125.0" x2="825.0" y2="125.0" stroke="#e2e8f0" stroke-width="1"/>
+  <text x="85.0" y="129.0" fill="#be123c" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">53°</text>
+  <text x="835.0" y="129.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">2.36 m</text>
+  <line x1="95.0" y1="395.0" x2="825.0" y2="395.0" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="95.0" y1="125.0" x2="95.0" y2="395.0" stroke="#94a3b8" stroke-width="1.5"/>
+  <line x1="825.0" y1="125.0" x2="825.0" y2="395.0" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="105.0" y="415.0" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">t=0.00s</text>
+  <rect x="219.9" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <text x="225.9" y="415.0" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">t=0.20s</text>
+  <rect x="235.0" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <rect x="250.1" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <rect x="265.2" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <text x="346.7" y="415.0" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">t=0.40s</text>
+  <rect x="370.9" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <rect x="386.0" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <rect x="401.1" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <rect x="416.2" y="125.0" width="12" height="270.0" fill="#f43f5e" opacity="0.14"/>
+  <text x="467.6" y="415.0" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">t=0.60s</text>
+  <text x="588.4" y="415.0" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">t=0.80s</text>
+  <text x="709.3" y="415.0" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">t=1.00s</text>
+  <text x="815.0" y="415.0" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="middle">t=1.18s</text>
+  <polyline fill="none" stroke="#e11d48" stroke-width="2.8" points="105.0,391.7 120.1,380.9 135.2,363.4 150.3,342.7 165.4,318.7 180.5,293.6 195.6,269.9 210.7,247.2 225.9,226.7 241.0,209.6 256.1,197.8 271.2,189.2 286.3,184.1 301.4,185.5 316.5,192.1 331.6,199.6 346.7,207.3 361.8,214.9 376.9,221.1 392.0,229.9 407.1,242.1 422.2,249.9 437.3,252.7 452.4,253.4 467.6,247.2 482.7,233.4 497.8,216.2 512.9,198.2 528.0,181.2 543.1,167.6 558.2,160.2 573.3,161.8 588.4,171.8 603.5,183.9 618.6,193.6 633.7,203.0 648.8,216.7 663.9,237.6 679.0,262.5 694.1,287.1 709.3,305.0 724.4,313.6 739.5,316.4 754.6,315.2 769.7,313.0 784.8,314.0 799.9,319.2 815.0,328.7"/>
+  <polyline fill="none" stroke="#0284c7" stroke-width="2.8" points="105.0,166.2 120.1,166.2 135.2,166.2 150.3,166.3 165.4,166.6 180.5,167.0 195.6,167.7 210.7,168.8 225.9,170.5 241.0,172.9 256.1,176.1 271.2,180.1 286.3,184.8 301.4,190.1 316.5,195.8 331.6,201.8 346.7,208.1 361.8,214.4 376.9,221.0 392.0,228.0 407.1,235.1 422.2,242.5 437.3,249.9 452.4,257.3 467.6,264.6 482.7,271.7 497.8,278.6 512.9,285.2 528.0,291.4 543.1,297.2 558.2,302.6 573.3,307.7 588.4,312.5 603.5,317.0 618.6,321.3 633.7,325.4 648.8,329.3 663.9,332.9 679.0,336.1 694.1,339.1 709.3,341.7 724.4,344.1 739.5,346.4 754.6,348.7 769.7,350.8 784.8,352.9 799.9,354.8 815.0,356.6"/>
+  <polyline fill="none" stroke="#059669" stroke-width="2.5" stroke-dasharray="6,4" points="105.0,202.5 120.1,202.5 135.2,202.5 150.3,202.7 165.4,203.0 180.5,203.6 195.6,204.4 210.7,205.6 225.9,207.5 241.0,210.4 256.1,214.3 271.2,219.1 286.3,224.5 301.4,230.2 316.5,236.1 331.6,242.2 346.7,248.3 361.8,254.5 376.9,261.0 392.0,268.1 407.1,275.8 422.2,284.1 437.3,292.6 452.4,301.0 467.6,309.3 482.7,317.3 497.8,324.9 512.9,331.9 528.0,338.1 543.1,343.3 558.2,347.5 573.3,350.6 588.4,352.7 603.5,354.0 618.6,354.7 633.7,355.1 648.8,355.1 663.9,354.9 679.0,354.4 694.1,353.7 709.3,352.9 724.4,352.0 739.5,351.0 754.6,350.0 769.7,349.0 784.8,347.9 799.9,346.9 815.0,346.0"/>
+  <text x="460.0" y="458" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle">Simulation Time (dt = 25 ms; Red Shaded Band = Active Wrench Shove)</text>
 </svg>
