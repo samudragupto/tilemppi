@@ -1,0 +1,50 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "Dockerfile.cpu"
+      - "src/**"
+      - "frontend/**"
+      - "pyproject.toml"
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "Dockerfile.cpu"
+      - "src/**"
+      - "frontend/**"
+      - "pyproject.toml"
+
+jobs:
+  docker-cpu-smoke:
+    name: Build & Smoke-Test CPU Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build CPU production image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.cpu
+          load: true
+          tags: tilemppi:cpu-ci
+      - name: Smoke test /api/health endpoint
+        run: |
+          docker run -d --name tilemppi-smoke -p 8000:8000 tilemppi:cpu-ci
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8000/api/health; then
+              echo "Health check passed!"
+              docker stop tilemppi-smoke
+              docker rm tilemppi-smoke
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs tilemppi-smoke
+          docker stop tilemppi-smoke || true
+          exit 1
+
