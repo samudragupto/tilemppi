@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 440" width="860" height="440">
+  <rect width="100%" height="100%" fill="#070b19" rx="12"/>
+  <text x="40" y="38" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="bold">Parallel-Universe Rollout Scaling: Control Loop Hz &amp; Million State-Steps/s</text>
+  <text x="40" y="60" fill="#94a3b8" font-family="Segoe UI, Arial, sans-serif" font-size="12">Measured on NVIDIA GeForce RTX 4060 Laptop GPU (Backend: torch_gpu)</text>
+  <line x1="80" y1="360" x2="800" y2="360" stroke="#334155" stroke-width="1.5"/>
+  <line x1="80" y1="90" x2="80" y2="360" stroke="#334155" stroke-width="1.5"/>
+  <polyline fill="none" stroke="#00f5d4" stroke-width="3" points="110.0,161.9 275.0,141.3 440.0,154.4 605.0,169.4 770.0,195.4"/>
+  <polyline fill="none" stroke="#38bdf8" stroke-width="3" stroke-dasharray="6,4" points="110.0,346.0 275.0,332.4 440.0,284.0 605.0,228.1 770.0,141.3"/>
+  <circle cx="110.0" cy="161.9" r="5.5" fill="#00f5d4"/>
+  <text x="110.0" y="149.9" fill="#00f5d4" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">30.2 Hz</text>
+  <circle cx="110.0" cy="346.0" r="5.5" fill="#38bdf8"/>
+  <text x="110.0" y="366.0" fill="#38bdf8" font-family="Segoe UI, Arial, sans-serif" font-size="11" text-anchor="middle">0.2 M/s</text>
+  <text x="110.0" y="388" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12" text-anchor="middle">K=256</text>
+  <circle cx="275.0" cy="141.3" r="5.5" fill="#00f5d4"/>
+  <text x="275.0" y="129.3" fill="#00f5d4" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">33.5 Hz</text>
+  <circle cx="275.0" cy="332.4" r="5.5" fill="#38bdf8"/>
+  <text x="275.0" y="352.4" fill="#38bdf8" font-family="Segoe UI, Arial, sans-serif" font-size="11" text-anchor="middle">1.1 M/s</text>
+  <text x="275.0" y="388" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12" text-anchor="middle">K=1,024</text>
+  <circle cx="440.0" cy="154.4" r="5.5" fill="#00f5d4"/>
+  <text x="440.0" y="142.4" fill="#00f5d4" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">31.4 Hz</text>
+  <circle cx="440.0" cy="284.0" r="5.5" fill="#38bdf8"/>
+  <text x="440.0" y="304.0" fill="#38bdf8" font-family="Segoe UI, Arial, sans-serif" font-size="11" text-anchor="middle">4.1 M/s</text>
+  <text x="440.0" y="388" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12" text-anchor="middle">K=4,096</text>
+  <circle cx="605.0" cy="169.4" r="5.5" fill="#00f5d4"/>
+  <text x="605.0" y="157.4" fill="#00f5d4" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">29.0 Hz</text>
+  <circle cx="605.0" cy="228.1" r="5.5" fill="#38bdf8"/>
+  <text x="605.0" y="248.1" fill="#38bdf8" font-family="Segoe UI, Arial, sans-serif" font-size="11" text-anchor="middle">7.6 M/s</text>
+  <text x="605.0" y="388" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12" text-anchor="middle">K=8,192</text>
+  <circle cx="770.0" cy="195.4" r="5.5" fill="#00f5d4"/>
+  <text x="770.0" y="183.4" fill="#00f5d4" font-family="Segoe UI, Arial, sans-serif" font-size="11" font-weight="bold" text-anchor="middle">24.9 Hz</text>
+  <circle cx="770.0" cy="141.3" r="5.5" fill="#38bdf8"/>
+  <text x="770.0" y="161.3" fill="#38bdf8" font-family="Segoe UI, Arial, sans-serif" font-size="11" text-anchor="middle">13.0 M/s</text>
+  <text x="770.0" y="388" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12" text-anchor="middle">K=16,384</text>
+  <circle cx="580" cy="40" r="5" fill="#00f5d4"/>
+  <text x="594" y="44" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Control Loop Frequency (Hz)</text>
+  <circle cx="580" cy="62" r="5" fill="#38bdf8"/>
+  <text x="594" y="66" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Throughput (Million State-Steps/s)</text>
+</svg>

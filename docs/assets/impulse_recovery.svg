@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 440" width="860" height="440">
+  <rect width="100%" height="100%" fill="#070b19" rx="12"/>
+  <text x="40" y="38" fill="#f8fafc" font-family="Segoe UI, Arial, sans-serif" font-size="18" font-weight="bold">Closed-Loop Impulse Shove Disturbance Rejection &amp; Obstacle Clearance</text>
+  <text x="40" y="60" fill="#94a3b8" font-family="Segoe UI, Arial, sans-serif" font-size="12">External Lateral/Rotational Wrench Impulse Injected at Step 8 -> Rapid Attitude &amp; Trajectory Recovery</text>
+  <line x1="80" y1="360" x2="810" y2="360" stroke="#334155" stroke-width="1.5"/>
+  <line x1="80" y1="90" x2="80" y2="360" stroke="#334155" stroke-width="1.5"/>
+  <rect x="200.7" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <rect x="215.9" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <rect x="231.1" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <rect x="246.3" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <rect x="352.8" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <rect x="368.0" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <rect x="383.3" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <rect x="398.5" y="90" width="12" height="270" fill="#f43f5e" opacity="0.16"/>
+  <polyline fill="none" stroke="#f43f5e" stroke-width="2.8" points="85.0,347.2 100.2,338.0 115.4,323.1 130.6,305.4 145.9,285.0 161.1,263.6 176.3,243.4 191.5,224.1 206.7,206.6 221.9,192.1 237.1,182.0 252.3,174.7 267.6,170.4 282.8,171.5 298.0,177.1 313.2,183.5 328.4,190.1 343.6,196.6 358.8,201.9 374.0,209.3 389.3,219.8 404.5,226.4 419.7,228.8 434.9,229.4 450.1,224.1 465.3,212.4 480.5,197.7 495.7,182.4 511.0,167.8 526.2,156.3 541.4,150.0 556.6,151.4 571.8,159.8 587.0,170.2 602.2,178.4 617.4,186.4 632.7,198.1 647.9,215.9 663.1,237.1 678.3,258.0 693.5,273.3 708.7,280.7 723.9,283.0 739.1,282.0 754.4,280.1 769.6,281.0 784.8,285.4 800.0,293.5"/>
+  <polyline fill="none" stroke="#00f5d4" stroke-width="2.8" points="85.0,150.0 100.2,150.0 115.4,150.0 130.6,150.1 145.9,150.3 161.1,150.7 176.3,151.4 191.5,152.3 206.7,153.8 221.9,155.9 237.1,158.7 252.3,162.2 267.6,166.3 282.8,170.9 298.0,175.8 313.2,181.1 328.4,186.6 343.6,192.2 358.8,197.9 374.0,204.0 389.3,210.3 404.5,216.7 419.7,223.2 434.9,229.6 450.1,236.0 465.3,242.2 480.5,248.2 495.7,254.0 511.0,259.4 526.2,264.5 541.4,269.2 556.6,273.7 571.8,277.9 587.0,281.8 602.2,285.6 617.4,289.2 632.7,292.6 647.9,295.7 663.1,298.6 678.3,301.1 693.5,303.4 708.7,305.6 723.9,307.6 739.1,309.5 754.4,311.4 769.6,313.2 784.8,314.8 800.0,316.4"/>
+  <polyline fill="none" stroke="#10b981" stroke-width="2.2" stroke-dasharray="5,4" points="85.0,181.7 100.2,181.7 115.4,181.8 130.6,181.9 145.9,182.2 161.1,182.7 176.3,183.4 191.5,184.5 206.7,186.1 221.9,188.6 237.1,192.0 252.3,196.2 267.6,201.0 282.8,206.0 298.0,211.2 313.2,216.5 328.4,221.8 343.6,227.2 358.8,232.9 374.0,239.1 389.3,245.8 404.5,253.1 419.7,260.5 434.9,267.9 450.1,275.1 465.3,282.1 480.5,288.7 495.7,294.8 511.0,300.2 526.2,304.9 541.4,308.5 556.6,311.2 571.8,313.0 587.0,314.1 602.2,314.8 617.4,315.1 632.7,315.1 647.9,314.9 663.1,314.5 678.3,313.9 693.5,313.2 708.7,312.4 723.9,311.5 739.1,310.6 754.4,309.8 769.6,308.9 784.8,308.0 800.0,307.1"/>
+  <rect x="480" y="34" width="12" height="12" fill="#f43f5e" rx="2"/>
+  <text x="498" y="44" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Attitude Tilt (deg)</text>
+  <rect x="615" y="34" width="12" height="12" fill="#00f5d4" rx="2"/>
+  <text x="633" y="44" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Goal Distance Error (m)</text>
+  <rect x="480" y="54" width="12" height="12" fill="#10b981" rx="2"/>
+  <text x="498" y="64" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12">Min SDF Obstacle Clearance (m)</text>
+  <text x="445" y="398" fill="#e2e8f0" font-family="Segoe UI, Arial, sans-serif" font-size="12" text-anchor="middle">Simulation Control Steps (dt = 25 ms, Red Band = Active Wrench Shove)</text>
+</svg>

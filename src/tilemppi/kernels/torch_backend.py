@@ -55,7 +55,7 @@ def generate_philox_ou_noise_torch(
     control_dim: int,
     sigma_vec: Any,
     ou_rho: float,
-    seed: int,
+    seed: int | Any,
     precision: PrecisionMode,
     device: Any,
 ) -> Any:
@@ -65,10 +65,13 @@ def generate_philox_ou_noise_torch(
 
     k_idx = torch.arange(num_rollouts, dtype=torch.int64, device=device).view(-1, 1)
     d_idx = torch.arange(control_dim, dtype=torch.int64, device=device).view(1, -1)
-    seed_i64 = int(seed) & mask32
+    if isinstance(seed, int):
+        seed_t = torch.tensor(seed & mask32, dtype=torch.int64, device=device)
+    else:
+        seed_t = (seed & mask32).to(torch.int64)
 
-    c0 = (k_idx ^ ((seed_i64 + 0x9E3779B9) & mask32)) & mask32
-    d_term = ((d_idx * 1013904223) & mask32) ^ ((seed_i64 * 2246822519) & mask32)
+    c0 = (k_idx ^ ((seed_t + 0x9E3779B9) & mask32)) & mask32
+    d_term = ((d_idx * 1013904223) & mask32) ^ ((seed_t * 2246822519) & mask32)
 
     sigma_t = sigma_vec.view(1, control_dim).to(device=device, dtype=torch.float32)
     rho_f = float(np.float32(ou_rho))
@@ -114,13 +117,24 @@ def evaluate_sdf_batch_torch(
     points: Any,
     obstacles_table: Any,
     t: float,
+    assume_all_active: bool = False,
+    static_table: bool = False,
 ) -> Any:
     """Vectorized 3D SDF evaluation on GPU/CPU tensor (K, 3) against active obstacle rows."""
-    active_mask = obstacles_table[:, 0] >= 0.0
-    if not bool(torch.any(active_mask)):
-        return torch.full((points.shape[0],), 1.0e4, dtype=torch.float32, device=points.device)
+    if static_table:
+        active_obs = obstacles_table
+    elif assume_all_active:
+        active_obs = obstacles_table
+        if active_obs.shape[0] == 0:
+            return torch.full((points.shape[0],), 1.0e4, dtype=torch.float32, device=points.device)
+    else:
+        active_mask = obstacles_table[:, 0] >= 0.0
+        if not bool(torch.any(active_mask)):
+            return torch.full((points.shape[0],), 1.0e4, dtype=torch.float32, device=points.device)
+        active_obs = obstacles_table[active_mask]  # (M_act, 16)
+        if active_obs.shape[0] == 0:
+            return torch.full((points.shape[0],), 1.0e4, dtype=torch.float32, device=points.device)
 
-    active_obs = obstacles_table[active_mask]  # (M_act, 16)
     kinds = torch.round(active_obs[:, 0]).to(torch.int64)  # (M_act,)
 
     t_f = float(t)
@@ -181,15 +195,19 @@ def evaluate_sdf_batch_torch(
 
     k_exp = kinds.unsqueeze(0)
     d_all = torch.where(
-        k_exp == 0,
-        d_sphere,
+        k_exp < 0,
+        torch.full_like(d_sphere, 1.0e4),
         torch.where(
-            k_exp == 1,
-            d_capsule,
+            k_exp == 0,
+            d_sphere,
             torch.where(
-                k_exp == 2,
-                d_box,
-                torch.where(k_exp == 3, d_torus, d_ground),
+                k_exp == 1,
+                d_capsule,
+                torch.where(
+                    k_exp == 2,
+                    d_box,
+                    torch.where(k_exp == 3, d_torus, d_ground),
+                ),
             ),
         ),
     )
@@ -437,6 +455,11 @@ class TorchMPPIBackend:
         self._swarm_offsets = torch.as_tensor(
             SWARM_FORMATION_OFFSETS, dtype=torch.float32, device=self.device
         )
+        self._stand_z_t = torch.tensor(NOMINAL_STANDING_Z, dtype=torch.float32, device=self.device)
+        self._cuda_graph: Any = None
+        self._graph_obs_rows: int = -1
+        self._g_inputs: dict[str, Any] = {}
+        self._g_outputs: tuple[Any, Any, Any, Any, Any] | None = None
 
     def _step_rk4_torch(self, x: Any, u: Any, dt: float) -> Any:
         half_dt = 0.5 * dt
@@ -462,6 +485,274 @@ class TorchMPPIBackend:
         k4 = _swarm_deriv_torch(_swarm_project_torch(x + dt * k3), u)
         return _swarm_project_torch(x + sixth_dt * (k1 + 2.0 * k2 + 2.0 * k3 + k4))
 
+    def _execute_tensor_step(
+        self,
+        x0_t: Any,
+        u_nom_t: Any,
+        obs_t: Any,
+        wp_t: Any,
+        gl_t: Any,
+        seed_t: Any,
+        inv_lam_t: Any,
+        static_table: bool,
+    ) -> tuple[Any, Any, Any, Any, Any]:
+        num_rollouts = self.mppi_cfg.num_rollouts
+        horizon = self.mppi_cfg.horizon
+        dt = float(self.mppi_cfg.dt)
+        n_vis = min(self.mppi_cfg.num_vis_rollouts, num_rollouts)
+
+        x = x0_t.expand(num_rollouts, self.model.state_dim).clone()
+        wp_dog = torch.stack([wp_t[0, 0], wp_t[0, 1], self._stand_z_t]).view(1, 3)
+        gl_dog = torch.stack([gl_t[0, 0], gl_t[0, 1], self._stand_z_t]).view(1, 3)
+
+        perturbations = generate_philox_ou_noise_torch(
+            num_rollouts=num_rollouts,
+            horizon=horizon,
+            control_dim=self.model.control_dim,
+            sigma_vec=self._sigma_vec,
+            ou_rho=self.mppi_cfg.ou_rho,
+            seed=seed_t,
+            precision=self.precision,
+            device=self.device,
+        )
+
+        costs = torch.zeros(num_rollouts, dtype=torch.float32, device=self.device)
+        min_sdf_h = torch.full((num_rollouts,), 1.0e4, dtype=torch.float32, device=self.device)
+        vis_xyz_t = torch.zeros((n_vis, horizon, 3), dtype=torch.float32, device=self.device)
+        u_prev = u_nom_t[0:1, :].expand(num_rollouts, self.model.control_dim).clone()
+
+        for t in range(horizon):
+            t_sec = (t + 1) * dt
+            u_t = torch.clamp(
+                u_nom_t[t : t + 1, :] + perturbations[:, t, :], self._u_min, self._u_max
+            )
+            x = self._step_rk4_torch(x, u_t, dt)
+
+            if self.robot_kind == RobotKind.SWARM:
+                pos_t = 0.25 * (x[:, 0:3] + x[:, 8:11] + x[:, 16:19] + x[:, 24:27])
+            else:
+                pos_t = x[:, 0:3]
+
+            vis_xyz_t[:, t, :] = pos_t[:n_vis]
+
+            sdf_t = evaluate_sdf_batch_torch(
+                pos_t, obs_t, t=t_sec, assume_all_active=not static_table, static_table=static_table
+            )
+            min_sdf_h = torch.minimum(min_sdf_h, sdf_t)
+            cvar_scale = float(
+                0.06 * self.mppi_cfg.cvar_alpha * self.mppi_cfg.cvar_weight * np.sqrt(t_sec)
+            )
+
+            if self.robot_kind == RobotKind.QUADROTOR:
+                wp_err = pos_t - wp_t
+                gl_err = pos_t - gl_t
+                qx, qy = x[:, 4], x[:, 5]
+                vel = x[:, 7:10]
+                omg = x[:, 10:13]
+                ctrl_dev = u_t - self._u_nom_default.unsqueeze(0)
+                du = u_t - u_prev
+                g_pen = torch.clamp(0.35 - pos_t[:, 2], min=0.0)
+                coll_c = compute_barrier_cost_torch(sdf_t, self.sdf_cfg, cvar_scale)
+                step_c = (
+                    28.0 * torch.sum(wp_err * wp_err, dim=-1)
+                    + 1.0 * torch.sum(gl_err * gl_err, dim=-1)
+                    + 14.0 * (qx * qx + qy * qy)
+                    + 0.8 * torch.sum(vel * vel, dim=-1)
+                    + 0.45 * torch.sum(omg * omg, dim=-1)
+                    + 0.15 * torch.sum(ctrl_dev * ctrl_dev, dim=-1)
+                    + 0.35 * torch.sum(du * du, dim=-1)
+                    + 450.0 * (g_pen * g_pen)
+                    + coll_c
+                )
+            elif self.robot_kind == RobotKind.QUADRUPED:
+                wp_err = pos_t - wp_dog
+                gl_err = pos_t - gl_dog
+                qw, qx, qy, qz = x[:, 3], x[:, 4], x[:, 5], x[:, 6]
+                vel = x[:, 7:10]
+                omg = x[:, 10:13]
+                dx_wp = wp_t[0, 0] - pos_t[:, 0]
+                dy_wp = wp_t[0, 1] - pos_t[:, 1]
+                dist_xy = torch.sqrt(dx_wp * dx_wp + dy_wp * dy_wp)
+                des_yaw = torch.atan2(dy_wp, dx_wp)
+                yaw = torch.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+                yaw_diff = torch.atan2(torch.sin(yaw - des_yaw), torch.cos(yaw - des_yaw))
+                head_c = torch.where(
+                    dist_xy > 0.35, 4.5 * (yaw_diff * yaw_diff), torch.zeros_like(dist_xy)
+                )
+                h_err = pos_t[:, 2] - NOMINAL_STANDING_Z
+                du = u_t - u_prev
+                coll_c = compute_barrier_cost_torch(sdf_t, self.sdf_cfg, cvar_scale)
+                step_c = (
+                    22.0 * torch.sum(wp_err * wp_err, dim=-1)
+                    + 5.0 * torch.sum(gl_err * gl_err, dim=-1)
+                    + head_c
+                    + 60.0 * (h_err * h_err)
+                    + 45.0 * (qx * qx + qy * qy)
+                    + 0.8 * torch.sum(vel * vel, dim=-1)
+                    + 0.6 * torch.sum(omg * omg, dim=-1)
+                    + 0.12 * torch.sum(u_t * u_t, dim=-1)
+                    + 0.30 * torch.sum(du * du, dim=-1)
+                    + coll_c
+                )
+            else:
+                step_c = torch.zeros_like(costs)
+                positions = [x[:, 8 * i : 8 * i + 3] for i in range(4)]
+                for i in range(4):
+                    pi = positions[i]
+                    vi = x[:, 8 * i + 3 : 8 * i + 6]
+                    ai = x[:, 8 * i + 6 : 8 * i + 8]
+                    off = self._swarm_offsets[i].view(1, 3)
+                    wp_e = pi - (wp_t + off)
+                    gl_e = pi - (gl_t + off)
+                    sdf_i = evaluate_sdf_batch_torch(
+                        pi,
+                        obs_t,
+                        t=t_sec,
+                        assume_all_active=not static_table,
+                        static_table=static_table,
+                    )
+                    step_c = (
+                        step_c
+                        + 5.5 * torch.sum(wp_e * wp_e, dim=-1)
+                        + 1.5 * torch.sum(gl_e * gl_e, dim=-1)
+                        + 0.25 * torch.sum(vi * vi, dim=-1)
+                        + 3.5 * torch.sum(ai * ai, dim=-1)
+                        + 0.45 * compute_barrier_cost_torch(sdf_i, self.sdf_cfg, cvar_scale)
+                    )
+                for i in range(4):
+                    for j in range(i + 1, 4):
+                        diff = positions[i] - positions[j]
+                        dist = torch.sqrt(torch.sum(diff * diff, dim=-1) + 1e-6)
+                        viol = torch.clamp(0.52 - dist, min=0.0)
+                        step_c = step_c + 650.0 * (viol * viol)
+                ctrl_dev = u_t - self._u_nom_default.unsqueeze(0)
+                du = u_t - u_prev
+                step_c = (
+                    step_c
+                    + 0.06 * torch.sum(ctrl_dev * ctrl_dev, dim=-1)
+                    + 0.18 * torch.sum(du * du, dim=-1)
+                )
+
+            costs = costs + step_c
+            u_prev = u_t
+
+        if self.robot_kind == RobotKind.QUADROTOR:
+            err_f = x[:, 0:3] - wp_t
+            term_c = (
+                95.0 * torch.sum(err_f * err_f, dim=-1)
+                + 12.0 * torch.sum(x[:, 7:10] ** 2, dim=-1)
+                + 25.0 * (x[:, 4] ** 2 + x[:, 5] ** 2)
+                + 2.5 * torch.sum(x[:, 10:13] ** 2, dim=-1)
+            )
+        elif self.robot_kind == RobotKind.QUADRUPED:
+            err_f = x[:, 0:3] - wp_dog
+            term_c = (
+                110.0 * torch.sum(err_f * err_f, dim=-1)
+                + 14.0 * torch.sum(x[:, 7:10] ** 2, dim=-1)
+                + 55.0 * (x[:, 4] ** 2 + x[:, 5] ** 2)
+            )
+        else:
+            term_c = torch.zeros_like(costs)
+            for i in range(4):
+                pi = x[:, 8 * i : 8 * i + 3]
+                vi = x[:, 8 * i + 3 : 8 * i + 6]
+                ti = wp_t + self._swarm_offsets[i].view(1, 3)
+                term_c = (
+                    term_c
+                    + 28.0 * torch.sum((pi - ti) ** 2, dim=-1)
+                    + 4.0 * torch.sum(vi * vi, dim=-1)
+                )
+
+        costs = costs + term_c
+
+        if self.mppi_cfg.cvar_weight > 0.0:
+            cvar_margin = float(self.sdf_cfg.robot_radius + 1.35 * self.sdf_cfg.safety_margin)
+            tail_pen = torch.clamp(cvar_margin - min_sdf_h, min=0.0)
+            cvar_factor = float(
+                self.mppi_cfg.cvar_weight
+                * (1.0 + self.mppi_cfg.cvar_alpha)
+                * 0.25
+                * self.sdf_cfg.hard_barrier_weight
+            )
+            costs = costs + cvar_factor * (tail_pen * tail_pen)
+
+        min_c = torch.min(costs)
+        shifted = torch.clamp((costs - min_c) * inv_lam_t, 0.0, 60.0)
+        exp_w = torch.exp(-shifted)
+        sum_exp = torch.clamp(torch.sum(exp_w), min=1e-12)
+        weights_t = exp_w / sum_exp
+        w2_sum_t = torch.sum(weights_t * weights_t)
+
+        eps_2d = perturbations.view(num_rollouts, -1)
+        delta_u_t = torch.matmul(weights_t.view(1, -1), eps_2d).view(
+            horizon, self.model.control_dim
+        )
+        u_new_t = torch.clamp(u_nom_t + delta_u_t, self._u_min, self._u_max)
+        return u_new_t, costs, weights_t, vis_xyz_t, w2_sum_t
+
+    def _ensure_cuda_graph(
+        self,
+        x0_np: Float32Array,
+        u_nom_np: Float32Array,
+        obs_np: Float32Array,
+        wp_np: Float32Array,
+        gl_np: Float32Array,
+        step_seed: int,
+        inv_lam: float,
+    ) -> None:
+        obs_rows = int(obs_np.shape[0])
+        if self._cuda_graph is not None and self._graph_obs_rows == obs_rows:
+            return
+
+        self._graph_obs_rows = obs_rows
+        self._g_inputs = {
+            "x0": torch.as_tensor(x0_np, dtype=torch.float32, device=self.device)
+            .view(1, self.model.state_dim)
+            .clone(),
+            "u_nom": torch.as_tensor(u_nom_np, dtype=torch.float32, device=self.device)
+            .view(self.mppi_cfg.horizon, self.model.control_dim)
+            .clone(),
+            "obs": torch.as_tensor(obs_np, dtype=torch.float32, device=self.device).clone(),
+            "wp": torch.as_tensor(wp_np, dtype=torch.float32, device=self.device)
+            .view(1, 3)
+            .clone(),
+            "gl": torch.as_tensor(gl_np, dtype=torch.float32, device=self.device)
+            .view(1, 3)
+            .clone(),
+            "seed": torch.tensor(step_seed & 0xFFFFFFFF, dtype=torch.int64, device=self.device),
+            "inv_lam": torch.tensor(inv_lam, dtype=torch.float32, device=self.device),
+        }
+
+        s = torch.cuda.Stream()
+        s.wait_stream(torch.cuda.current_stream())
+        with torch.cuda.stream(s):
+            for _ in range(2):
+                self._execute_tensor_step(
+                    self._g_inputs["x0"],
+                    self._g_inputs["u_nom"],
+                    self._g_inputs["obs"],
+                    self._g_inputs["wp"],
+                    self._g_inputs["gl"],
+                    self._g_inputs["seed"],
+                    self._g_inputs["inv_lam"],
+                    static_table=True,
+                )
+        torch.cuda.current_stream().wait_stream(s)
+
+        g = torch.cuda.CUDAGraph()
+        with torch.cuda.graph(g):
+            self._g_outputs = self._execute_tensor_step(
+                self._g_inputs["x0"],
+                self._g_inputs["u_nom"],
+                self._g_inputs["obs"],
+                self._g_inputs["wp"],
+                self._g_inputs["gl"],
+                self._g_inputs["seed"],
+                self._g_inputs["inv_lam"],
+                static_table=True,
+            )
+        self._cuda_graph = g
+
     def execute_mppi_step(
         self,
         state: Float32Array,
@@ -472,221 +763,53 @@ class TorchMPPIBackend:
         step_seed: int,
         temperature: float,
     ) -> tuple[Float32Array, Float32Array, Float32Array, Float32Array, Float32Array, float]:
-        """Run one complete MPPI step on PyTorch GPU/CPU with zero grad overhead."""
-        num_rollouts = self.mppi_cfg.num_rollouts
+        """Run one complete MPPI step on PyTorch GPU (via CUDA Graph) or CPU."""
         horizon = self.mppi_cfg.horizon
         dt = float(self.mppi_cfg.dt)
-        n_vis = min(self.mppi_cfg.num_vis_rollouts, num_rollouts)
+        inv_lam = 1.0 / max(float(temperature), 1e-4)
 
         with torch.no_grad():
-            x0_t = torch.as_tensor(state, dtype=torch.float32, device=self.device).view(
-                1, self.model.state_dim
-            )
-            x = x0_t.expand(num_rollouts, self.model.state_dim).clone()
-            u_nom_t = torch.as_tensor(
-                nominal_controls, dtype=torch.float32, device=self.device
-            ).view(horizon, self.model.control_dim)
-            obs_t = torch.as_tensor(obstacles_table, dtype=torch.float32, device=self.device)
-            wp_t = torch.as_tensor(waypoint, dtype=torch.float32, device=self.device).view(1, 3)
-            gl_t = torch.as_tensor(goal, dtype=torch.float32, device=self.device).view(1, 3)
-
-            perturbations = generate_philox_ou_noise_torch(
-                num_rollouts=num_rollouts,
-                horizon=horizon,
-                control_dim=self.model.control_dim,
-                sigma_vec=self._sigma_vec,
-                ou_rho=self.mppi_cfg.ou_rho,
-                seed=step_seed,
-                precision=self.precision,
-                device=self.device,
-            )
-
-            costs = torch.zeros(num_rollouts, dtype=torch.float32, device=self.device)
-            min_sdf_h = torch.full((num_rollouts,), 1.0e4, dtype=torch.float32, device=self.device)
-            vis_xyz_t = torch.zeros((n_vis, horizon, 3), dtype=torch.float32, device=self.device)
-
-            u_prev = u_nom_t[0:1, :].expand(num_rollouts, self.model.control_dim).clone()
-
-            for t in range(horizon):
-                t_sec = (t + 1) * dt
-                u_t = torch.clamp(
-                    u_nom_t[t : t + 1, :] + perturbations[:, t, :], self._u_min, self._u_max
+            if self.device.type == "cuda":
+                self._ensure_cuda_graph(
+                    state, nominal_controls, obstacles_table, waypoint, goal, step_seed, inv_lam
                 )
-                x = self._step_rk4_torch(x, u_t, dt)
-
-                if self.robot_kind == RobotKind.SWARM:
-                    pos_t = 0.25 * (x[:, 0:3] + x[:, 8:11] + x[:, 16:19] + x[:, 24:27])
-                else:
-                    pos_t = x[:, 0:3]
-
-                vis_xyz_t[:, t, :] = pos_t[:n_vis]
-
-                sdf_t = evaluate_sdf_batch_torch(pos_t, obs_t, t=t_sec)
-                min_sdf_h = torch.minimum(min_sdf_h, sdf_t)
-                cvar_scale = float(
-                    0.06 * self.mppi_cfg.cvar_alpha * self.mppi_cfg.cvar_weight * np.sqrt(t_sec)
+                self._g_inputs["x0"].copy_(
+                    torch.as_tensor(state, dtype=torch.float32).view(1, self.model.state_dim)
                 )
-
-                if self.robot_kind == RobotKind.QUADROTOR:
-                    wp_err = pos_t - wp_t
-                    gl_err = pos_t - gl_t
-                    qx, qy = x[:, 4], x[:, 5]
-                    vel = x[:, 7:10]
-                    omg = x[:, 10:13]
-                    ctrl_dev = u_t - self._u_nom_default.unsqueeze(0)
-                    du = u_t - u_prev
-                    g_pen = torch.clamp(0.35 - pos_t[:, 2], min=0.0)
-                    coll_c = compute_barrier_cost_torch(sdf_t, self.sdf_cfg, cvar_scale)
-                    step_c = (
-                        28.0 * torch.sum(wp_err * wp_err, dim=-1)
-                        + 1.0 * torch.sum(gl_err * gl_err, dim=-1)
-                        + 14.0 * (qx * qx + qy * qy)
-                        + 0.8 * torch.sum(vel * vel, dim=-1)
-                        + 0.45 * torch.sum(omg * omg, dim=-1)
-                        + 0.15 * torch.sum(ctrl_dev * ctrl_dev, dim=-1)
-                        + 0.35 * torch.sum(du * du, dim=-1)
-                        + 450.0 * (g_pen * g_pen)
-                        + coll_c
+                self._g_inputs["u_nom"].copy_(
+                    torch.as_tensor(nominal_controls, dtype=torch.float32).view(
+                        horizon, self.model.control_dim
                     )
-                elif self.robot_kind == RobotKind.QUADRUPED:
-                    wp_dog = torch.stack(
-                        [
-                            wp_t[0, 0],
-                            wp_t[0, 1],
-                            torch.tensor(NOMINAL_STANDING_Z, device=self.device),
-                        ]
-                    ).view(1, 3)
-                    gl_dog = torch.stack(
-                        [
-                            gl_t[0, 0],
-                            gl_t[0, 1],
-                            torch.tensor(NOMINAL_STANDING_Z, device=self.device),
-                        ]
-                    ).view(1, 3)
-                    wp_err = pos_t - wp_dog
-                    gl_err = pos_t - gl_dog
-                    qw, qx, qy, qz = x[:, 3], x[:, 4], x[:, 5], x[:, 6]
-                    vel = x[:, 7:10]
-                    omg = x[:, 10:13]
-                    dx_wp = wp_t[0, 0] - pos_t[:, 0]
-                    dy_wp = wp_t[0, 1] - pos_t[:, 1]
-                    dist_xy = torch.sqrt(dx_wp * dx_wp + dy_wp * dy_wp)
-                    des_yaw = torch.atan2(dy_wp, dx_wp)
-                    yaw = torch.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
-                    yaw_diff = torch.atan2(torch.sin(yaw - des_yaw), torch.cos(yaw - des_yaw))
-                    head_c = torch.where(
-                        dist_xy > 0.35, 4.5 * (yaw_diff * yaw_diff), torch.zeros_like(dist_xy)
-                    )
-                    h_err = pos_t[:, 2] - NOMINAL_STANDING_Z
-                    du = u_t - u_prev
-                    coll_c = compute_barrier_cost_torch(sdf_t, self.sdf_cfg, cvar_scale)
-                    step_c = (
-                        22.0 * torch.sum(wp_err * wp_err, dim=-1)
-                        + 5.0 * torch.sum(gl_err * gl_err, dim=-1)
-                        + head_c
-                        + 60.0 * (h_err * h_err)
-                        + 45.0 * (qx * qx + qy * qy)
-                        + 0.8 * torch.sum(vel * vel, dim=-1)
-                        + 0.6 * torch.sum(omg * omg, dim=-1)
-                        + 0.12 * torch.sum(u_t * u_t, dim=-1)
-                        + 0.30 * torch.sum(du * du, dim=-1)
-                        + coll_c
-                    )
-                else:
-                    step_c = torch.zeros_like(costs)
-                    positions = [x[:, 8 * i : 8 * i + 3] for i in range(4)]
-                    for i in range(4):
-                        pi = positions[i]
-                        vi = x[:, 8 * i + 3 : 8 * i + 6]
-                        ai = x[:, 8 * i + 6 : 8 * i + 8]
-                        off = self._swarm_offsets[i].view(1, 3)
-                        wp_e = pi - (wp_t + off)
-                        gl_e = pi - (gl_t + off)
-                        sdf_i = evaluate_sdf_batch_torch(pi, obs_t, t=t_sec)
-                        step_c = (
-                            step_c
-                            + 5.5 * torch.sum(wp_e * wp_e, dim=-1)
-                            + 1.5 * torch.sum(gl_e * gl_e, dim=-1)
-                            + 0.25 * torch.sum(vi * vi, dim=-1)
-                            + 3.5 * torch.sum(ai * ai, dim=-1)
-                            + 0.45 * compute_barrier_cost_torch(sdf_i, self.sdf_cfg, cvar_scale)
-                        )
-                    for i in range(4):
-                        for j in range(i + 1, 4):
-                            diff = positions[i] - positions[j]
-                            dist = torch.sqrt(torch.sum(diff * diff, dim=-1) + 1e-6)
-                            viol = torch.clamp(0.52 - dist, min=0.0)
-                            step_c = step_c + 650.0 * (viol * viol)
-                    ctrl_dev = u_t - self._u_nom_default.unsqueeze(0)
-                    du = u_t - u_prev
-                    step_c = (
-                        step_c
-                        + 0.06 * torch.sum(ctrl_dev * ctrl_dev, dim=-1)
-                        + 0.18 * torch.sum(du * du, dim=-1)
-                    )
-
-                costs = costs + step_c
-                u_prev = u_t
-
-            # Terminal cost
-            if self.robot_kind == RobotKind.QUADROTOR:
-                err_f = x[:, 0:3] - wp_t
-                term_c = (
-                    95.0 * torch.sum(err_f * err_f, dim=-1)
-                    + 12.0 * torch.sum(x[:, 7:10] ** 2, dim=-1)
-                    + 25.0 * (x[:, 4] ** 2 + x[:, 5] ** 2)
-                    + 2.5 * torch.sum(x[:, 10:13] ** 2, dim=-1)
                 )
-            elif self.robot_kind == RobotKind.QUADRUPED:
-                wp_dog_f = torch.stack(
-                    [wp_t[0, 0], wp_t[0, 1], torch.tensor(NOMINAL_STANDING_Z, device=self.device)]
-                ).view(1, 3)
-                err_f = x[:, 0:3] - wp_dog_f
-                term_c = (
-                    110.0 * torch.sum(err_f * err_f, dim=-1)
-                    + 14.0 * torch.sum(x[:, 7:10] ** 2, dim=-1)
-                    + 55.0 * (x[:, 4] ** 2 + x[:, 5] ** 2)
+                self._g_inputs["obs"].copy_(torch.as_tensor(obstacles_table, dtype=torch.float32))
+                self._g_inputs["wp"].copy_(
+                    torch.as_tensor(waypoint, dtype=torch.float32).view(1, 3)
                 )
+                self._g_inputs["gl"].copy_(torch.as_tensor(goal, dtype=torch.float32).view(1, 3))
+                self._g_inputs["seed"].fill_(step_seed & 0xFFFFFFFF)
+                self._g_inputs["inv_lam"].fill_(inv_lam)
+
+                self._cuda_graph.replay()
+                assert self._g_outputs is not None
+                u_new_t, costs, weights_t, vis_xyz_t, w2_sum_t = self._g_outputs
             else:
-                term_c = torch.zeros_like(costs)
-                for i in range(4):
-                    pi = x[:, 8 * i : 8 * i + 3]
-                    vi = x[:, 8 * i + 3 : 8 * i + 6]
-                    ti = wp_t + self._swarm_offsets[i].view(1, 3)
-                    term_c = (
-                        term_c
-                        + 28.0 * torch.sum((pi - ti) ** 2, dim=-1)
-                        + 4.0 * torch.sum(vi * vi, dim=-1)
-                    )
-
-            costs = costs + term_c
-
-            if self.mppi_cfg.cvar_weight > 0.0:
-                cvar_margin = float(self.sdf_cfg.robot_radius + 1.35 * self.sdf_cfg.safety_margin)
-                tail_pen = torch.clamp(cvar_margin - min_sdf_h, min=0.0)
-                cvar_factor = float(
-                    self.mppi_cfg.cvar_weight
-                    * (1.0 + self.mppi_cfg.cvar_alpha)
-                    * 0.25
-                    * self.sdf_cfg.hard_barrier_weight
+                x0_t = torch.as_tensor(state, dtype=torch.float32, device=self.device).view(
+                    1, self.model.state_dim
                 )
-                costs = costs + cvar_factor * (tail_pen * tail_pen)
+                u_nom_t = torch.as_tensor(
+                    nominal_controls, dtype=torch.float32, device=self.device
+                ).view(horizon, self.model.control_dim)
+                obs_active_np = obstacles_table[obstacles_table[:, 0] >= 0.0]
+                obs_t = torch.as_tensor(obs_active_np, dtype=torch.float32, device=self.device)
+                wp_t = torch.as_tensor(waypoint, dtype=torch.float32, device=self.device).view(1, 3)
+                gl_t = torch.as_tensor(goal, dtype=torch.float32, device=self.device).view(1, 3)
+                seed_t = torch.tensor(step_seed & 0xFFFFFFFF, dtype=torch.int64, device=self.device)
+                inv_lam_t = torch.tensor(inv_lam, dtype=torch.float32, device=self.device)
+                u_new_t, costs, weights_t, vis_xyz_t, w2_sum_t = self._execute_tensor_step(
+                    x0_t, u_nom_t, obs_t, wp_t, gl_t, seed_t, inv_lam_t, static_table=False
+                )
 
-            # Softmax reduction + Tensor Core matmul contraction
-            min_c = torch.min(costs)
-            lam = max(float(temperature), 1e-4)
-            shifted = torch.clamp((costs - min_c) / lam, 0.0, 60.0)
-            exp_w = torch.exp(-shifted)
-            sum_exp = torch.clamp(torch.sum(exp_w), min=1e-12)
-            weights_t = exp_w / sum_exp
-            ess = float(1.0 / max(float(torch.sum(weights_t * weights_t).item()), 1e-12))
-
-            eps_2d = perturbations.view(num_rollouts, -1)
-            delta_u_t = torch.matmul(weights_t.view(1, -1), eps_2d).view(
-                horizon, self.model.control_dim
-            )
-            u_new_t = torch.clamp(u_nom_t + delta_u_t, self._u_min, self._u_max)
-
+            ess = float(1.0 / max(float(w2_sum_t.item()), 1e-12))
             u_new = u_new_t.detach().cpu().numpy().astype(np.float32)
             costs_np = costs.detach().cpu().numpy().astype(np.float32)
             weights_np = weights_t.detach().cpu().numpy().astype(np.float32)
