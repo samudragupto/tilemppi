@@ -83,16 +83,16 @@ Total global memory footprint drops to **0.18 MB (inline noise) – 8.57 MB (FP1
 ## 3. Mathematical Formulation
 
 ### 3.1 Ornstein-Uhlenbeck Colored Perturbations
-To prevent high-frequency actuator chatter across horizon steps $t \in \{0, \dots, H-1\}$, each rollout $k \in \{0, \dots, K-1\}$ evolves temporally correlated perturbations with per-channel scale $\boldsymbol{\sigma} = 0.22 \, \sigma_{\text{noise}} (\mathbf{u}_{\max} - \mathbf{u}_{\min})$ and correlation $\rho_{\text{OU}} \in [0, 1)$:
+To prevent high-frequency actuator chatter across horizon steps $`t \in \{0, \dots, H-1\}`$, each rollout $`k \in \{0, \dots, K-1\}`$ evolves temporally correlated perturbations with per-channel scale $`\boldsymbol{\sigma} = 0.22 \, \sigma_{\text{noise}} (\mathbf{u}_{\max} - \mathbf{u}_{\min})`$ and correlation $`\rho_{\text{OU}} \in [0, 1)`$:
 
 $$
 \boldsymbol{\epsilon}_{k,0} = \boldsymbol{\sigma} \odot \mathbf{z}_{k,0}, \qquad \boldsymbol{\epsilon}_{k,t} = \rho_{\text{OU}} \boldsymbol{\epsilon}_{k,t-1} + \sqrt{1 - \rho_{\text{OU}}^2} \left(\boldsymbol{\sigma} \odot \mathbf{z}_{k,t}\right)
 $$
 
-where $\mathbf{z}_{k,t} \sim \mathcal{N}(\mathbf{0}, \mathbf{I}_{D_u})$ is generated deterministically in registers via a 4-round counter-based Philox bijection followed by the Box-Muller transform on keyed `(seed, k, t, d)` indices.
+where $`\mathbf{z}_{k,t} \sim \mathcal{N}(\mathbf{0}, \mathbf{I}_{D_u})`$ is generated deterministically in registers via a 4-round counter-based Philox bijection followed by the Box-Muller transform on keyed `(seed, k, t, d)` indices.
 
 ### 3.2 Fourth-Order Runge-Kutta (RK4) Tile Integration
-Given clamped control $\mathbf{u}_{k,t} = \mathrm{clip}(\mathbf{u}_t^{\mathrm{nom}} + \boldsymbol{\epsilon}_{k,t}, \mathbf{u}_{\min}, \mathbf{u}_{\max})$, the state tile advances over step size $\Delta t$ via:
+Given clamped control $`\mathbf{u}_{k,t} = \mathrm{clip}(\mathbf{u}_t^{\mathrm{nom}} + \boldsymbol{\epsilon}_{k,t}, \mathbf{u}_{\min}, \mathbf{u}_{\max})`$, the state tile advances over step size $\Delta t$ via:
 
 $$
 \begin{aligned}
@@ -105,16 +105,16 @@ $$
 \mathbf{x}_{k,t+1} = \Pi_{\mathcal{M}}\left(\mathbf{x}_{k,t} + \frac{\Delta t}{6}\left(\mathbf{k}_1 + 2\mathbf{k}_2 + 2\mathbf{k}_3 + \mathbf{k}_4\right)\right)
 $$
 
-where $\Pi_{\mathcal{M}}$ projects $SO(3)$ orientation quaternions onto the unit hypersphere $\mathbf{q} \leftarrow \mathrm{sign}(q_w)\,\mathbf{q} / \|\mathbf{q}\|_2$.
+where $\Pi_{\mathcal{M}}$ projects $SO(3)$ orientation quaternions onto the unit hypersphere $`\mathbf{q} \leftarrow \mathrm{sign}(q_w)\,\mathbf{q} / \|\mathbf{q}\|_2`$.
 
 ### 3.3 Differentiable 3D SDF Barrier & CVaR Tail-Risk Cost
-At horizon time $\tau_t = (t + 1)\Delta t$, each dynamic obstacle $m \in \{1, \dots, M\}$ moves along $\mathbf{p}_m(\tau_t) = \mathbf{p}_{m,0} + \mathbf{v}_m \tau_t + \frac{1}{2}\mathbf{a}_m \tau_t^2$. The minimum signed distance $d_{k,t} = \min_m \mathrm{SDF}_m(\mathbf{p}_{k,t}, \tau_t)$ induces a two-tier collision barrier with time-growing CVaR uncertainty inflation $\sigma_{\mathrm{CVaR}}(\tau_t) = 0.06\,\alpha_{\mathrm{CVaR}}\,w_{\mathrm{CVaR}}\sqrt{\tau_t}$:
+At horizon time $`\tau_t = (t + 1)\Delta t`$, each dynamic obstacle $`m \in \{1, \dots, M\}`$ moves along $`\mathbf{p}_m(\tau_t) = \mathbf{p}_{m,0} + \mathbf{v}_m \tau_t + \frac{1}{2}\mathbf{a}_m \tau_t^2`$. The minimum signed distance $`d_{k,t} = \min_m \mathrm{SDF}_m(\mathbf{p}_{k,t}, \tau_t)`$ induces a two-tier collision barrier with time-growing CVaR uncertainty inflation $`\sigma_{\mathrm{CVaR}}(\tau_t) = 0.06\,\alpha_{\mathrm{CVaR}}\,w_{\mathrm{CVaR}}\sqrt{\tau_t}`$:
 
 $$
 \phi_{\mathrm{coll}}(d_{k,t}, \tau_t) = w_{\mathrm{hard}} \max\left(0,\; r_{\mathrm{robot}} + m_{\mathrm{safe}} + \sigma_{\mathrm{CVaR}}(\tau_t) - d_{k,t}\right)^2 + w_{\mathrm{soft}} \exp\left(-\alpha (d_{k,t} - r_{\mathrm{robot}})\right)
 $$
 
-Let $d_{\min, k} = \min_{t} d_{k,t}$ be the worst-case clearance along rollout $k$. Combining per-step tracking, control effort, rate smoothness, barrier cost, terminal cost, and trajectory-level CVaR tail-risk penalty gives:
+Let $`d_{\min, k} = \min_{t} d_{k,t}`$ be the worst-case clearance along rollout $k$. Combining per-step tracking, control effort, rate smoothness, barrier cost, terminal cost, and trajectory-level CVaR tail-risk penalty gives:
 
 $$
 S_k = \phi_{\mathrm{term}}(\mathbf{x}_{k,H}, \mathbf{g}_{\mathrm{wp}}) + \phi_{\mathrm{CVaR}}(d_{\min, k}) + \sum_{t=0}^{H-1} \left( \ell_{\mathrm{track}}(\mathbf{x}_{k,t}, \mathbf{g}_{\mathrm{wp}}, \mathbf{g}) + \phi_{\mathrm{coll}}(d_{k,t}, \tau_t) + w_u \|\mathbf{u}_{k,t} - \mathbf{u}_{\mathrm{hover}}\|_2^2 + w_{\Delta u} \|\mathbf{u}_{k,t} - \mathbf{u}_{k,t-1}\|_2^2 \right)

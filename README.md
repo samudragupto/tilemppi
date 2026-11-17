@@ -117,13 +117,13 @@ $$
 \boldsymbol{\epsilon}_{k,0} = \boldsymbol{\sigma} \odot \mathbf{z}_{k,0}, \qquad \boldsymbol{\epsilon}_{k,t} = \rho_{\mathrm{OU}} \boldsymbol{\epsilon}_{k,t-1} + \sqrt{1 - \rho_{\mathrm{OU}}^2}\left(\boldsymbol{\sigma} \odot \mathbf{z}_{k,t}\right), \qquad \mathbf{z}_{k,t} \sim \mathcal{N}(\mathbf{0}, \mathbf{I}_{D_u})
 $$
 
-2. **RK4 Tile Integration on $SO(3)$** with clamped control $\mathbf{u}_{k,t} = \mathrm{clip}(\mathbf{u}_t^{\mathrm{nom}} + \boldsymbol{\epsilon}_{k,t}, \mathbf{u}_{\min}, \mathbf{u}_{\max})$:
+2. **RK4 Tile Integration on SO(3)** with clamped control:
 
 $$
-\mathbf{x}_{k,t+1} = \Pi_{\mathcal{M}}\left(\mathbf{x}_{k,t} + \frac{\Delta t}{6}\left(\mathbf{k}_1 + 2\mathbf{k}_2 + 2\mathbf{k}_3 + \mathbf{k}_4\right)\right)
+\mathbf{u}_{k,t} = \mathrm{clip}\left(\mathbf{u}_t^{\mathrm{nom}} + \boldsymbol{\epsilon}_{k,t},\; \mathbf{u}_{\min},\; \mathbf{u}_{\max}\right), \qquad \mathbf{x}_{k,t+1} = \Pi_{\mathcal{M}}\left(\mathbf{x}_{k,t} + \frac{\Delta t}{6}\left(\mathbf{k}_1 + 2\mathbf{k}_2 + 2\mathbf{k}_3 + \mathbf{k}_4\right)\right)
 $$
 
-3. **Uncertainty-Inflated 3D SDF Barrier & CVaR Tail-Risk Cost** at $\tau_t = (t + 1)\Delta t$, with $\sigma_{\mathrm{CVaR}}(\tau_t) = 0.06\,\alpha_{\mathrm{CVaR}}\,w_{\mathrm{CVaR}}\sqrt{\tau_t}$ and $d_{\min, k} = \min_t d_{k,t}$:
+3. **Uncertainty-Inflated 3D SDF Barrier & CVaR Tail-Risk Cost** at $`\tau_t = (t + 1)\Delta t`$, with $`\sigma_{\mathrm{CVaR}}(\tau_t) = 0.06\,\alpha_{\mathrm{CVaR}}\,w_{\mathrm{CVaR}}\sqrt{\tau_t}`$ and $`d_{\min, k} = \min_t d_{k,t}`$:
 
 $$
 \phi_{\mathrm{coll}}(d_{k,t}, \tau_t) = w_{\mathrm{hard}} \max\left(0,\; r_{\mathrm{robot}} + m_{\mathrm{safe}} + \sigma_{\mathrm{CVaR}}(\tau_t) - d_{k,t}\right)^2 + w_{\mathrm{soft}} \exp\left(-\alpha (d_{k,t} - r_{\mathrm{robot}})\right)
@@ -133,7 +133,7 @@ $$
 S_k = \phi_{\mathrm{term}}(\mathbf{x}_{k,H}, \mathbf{g}_{\mathrm{wp}}) + \phi_{\mathrm{CVaR}}(d_{\min, k}) + \sum_{t=0}^{H-1} \left(\ell_{\mathrm{track}}(\mathbf{x}_{k,t}, \mathbf{g}_{\mathrm{wp}}, \mathbf{g}) + \phi_{\mathrm{coll}}(d_{k,t}, \tau_t) + w_u \|\mathbf{u}_{k,t} - \mathbf{u}_{\mathrm{hover}}\|_2^2 + w_{\Delta u} \|\mathbf{u}_{k,t} - \mathbf{u}_{k,t-1}\|_2^2\right)
 $$
 
-4. **Log-Sum-Exp Importance Weighting & Savitzky-Golay Update** ($\beta = \min_k S_k$):
+4. **Log-Sum-Exp Importance Weighting & Savitzky-Golay Update** ($`\beta = \min_k S_k`$):
 
 $$
 w_k = \frac{\exp\left(-\min\left(\frac{S_k - \beta}{\lambda},\; 60\right)\right)}{\sum_{j=0}^{K-1} \exp\left(-\min\left(\frac{S_j - \beta}{\lambda},\; 60\right)\right)}, \qquad \mathbf{U}^{\mathrm{new}} = \mathrm{clip}\left(\mathcal{S}_{\mathrm{SG}}\left(\mathrm{clip}\left(\mathbf{U}^{\mathrm{nom}} + \sum_{k=0}^{K-1} w_k \boldsymbol{\epsilon}_k,\; \mathbf{u}_{\min},\; \mathbf{u}_{\max}\right)\right),\; \mathbf{u}_{\min},\; \mathbf{u}_{\max}\right)
