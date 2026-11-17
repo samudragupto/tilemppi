@@ -83,13 +83,14 @@ def _detect_cpu_info() -> tuple[str, int, bool]:
         if env_ident:
             cpu_model = env_ident
         try:
-            import winreg
+            import winreg as _winreg_mod
 
-            with winreg.OpenKey(
-                winreg.HKEY_LOCAL_MACHINE,
+            winreg_api: Any = _winreg_mod
+            with winreg_api.OpenKey(
+                winreg_api.HKEY_LOCAL_MACHINE,
                 r"HARDWARE\Description\System\CentralProcessor\0",
             ) as key:
-                val, _ = winreg.QueryValueEx(key, "ProcessorNameString")
+                val, _ = winreg_api.QueryValueEx(key, "ProcessorNameString")
                 if isinstance(val, str) and val.strip():
                     cpu_model = val.strip()
         except Exception:  # nosec B110

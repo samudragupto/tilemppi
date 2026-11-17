@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 
 from tilemppi.config import SDFConfig
@@ -172,7 +174,7 @@ class DroneSwarm(RobotModel):
         cvar_scale: float = 0.0,
     ) -> Float32Array:
         s = np.asarray(states, dtype=np.float32)
-        total = np.zeros(s.shape[:-1], dtype=np.float32)
+        total: Any = np.zeros(s.shape[:-1], dtype=np.float32)
         positions = [s[..., 8 * i : 8 * i + 3] for i in range(4)]
 
         for i in range(4):
@@ -216,7 +218,7 @@ class DroneSwarm(RobotModel):
         goal: Float32Array,
     ) -> Float32Array:
         s = np.asarray(states, dtype=np.float32)
-        total = np.zeros(s.shape[:-1], dtype=np.float32)
+        total: Any = np.zeros(s.shape[:-1], dtype=np.float32)
         for i in range(4):
             pos_i = s[..., 8 * i : 8 * i + 3]
             vel_i = s[..., 8 * i + 3 : 8 * i + 6]

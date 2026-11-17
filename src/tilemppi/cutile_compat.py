@@ -93,8 +93,10 @@ _CTX = _ExecutionContext()
 
 def _resolve_np_dtype(dtype: Any) -> np.dtype[Any]:
     if isinstance(dtype, TileDType):
-        return dtype.np_dtype
-    return np.dtype(dtype)
+        dt_tile: np.dtype[Any] = dtype.np_dtype
+        return dt_tile
+    dt_raw: np.dtype[Any] = np.dtype(dtype)
+    return dt_raw
 
 
 def _quantize_fp8_e4m3(arr: np.ndarray) -> np.ndarray:
@@ -359,15 +361,18 @@ def cat(tiles: list[np.ndarray] | tuple[np.ndarray, ...], axis: int = -1) -> np.
 
 
 def sum(x: Any, axis: int | tuple[int, ...] | None = None, keepdims: bool = False) -> Any:
-    return np.sum(np.asarray(x), axis=axis, keepdims=keepdims)
+    arr = np.asarray(x)
+    return np.sum(arr, axis=axis, keepdims=True) if keepdims else np.sum(arr, axis=axis)
 
 
 def max(x: Any, axis: int | tuple[int, ...] | None = None, keepdims: bool = False) -> Any:
-    return np.max(np.asarray(x), axis=axis, keepdims=keepdims)
+    arr = np.asarray(x)
+    return np.max(arr, axis=axis, keepdims=True) if keepdims else np.max(arr, axis=axis)
 
 
 def min(x: Any, axis: int | tuple[int, ...] | None = None, keepdims: bool = False) -> Any:
-    return np.min(np.asarray(x), axis=axis, keepdims=keepdims)
+    arr = np.asarray(x)
+    return np.min(arr, axis=axis, keepdims=True) if keepdims else np.min(arr, axis=axis)
 
 
 class CuTileKernelWrapper:
