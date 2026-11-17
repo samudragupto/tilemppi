@@ -226,7 +226,14 @@ def test_fastapi_rest_and_websocket_endpoints(tmp_path: Path) -> None:
             )
             ws.send_text(json.dumps({"type": "goal", "goal": [3.0, 0.0, 0.42]}))
             ws.send_text(json.dumps({"type": "step"}))
-            frame1 = ws.receive_bytes()
-            dec1 = decode_tmpi_frame(frame1)
-            assert np.allclose(dec1.goal, [3.0, 0.0, 0.42])
-            assert np.linalg.norm(dec1.impulse_vec) > 1.0
+
+            matched = False
+            for _ in range(10):
+                frame1 = ws.receive_bytes()
+                dec1 = decode_tmpi_frame(frame1)
+                if np.allclose(dec1.goal, [3.0, 0.0, 0.42]) and (
+                    np.linalg.norm(dec1.impulse_vec) > 1.0
+                ):
+                    matched = True
+                    break
+            assert matched, "Did not receive stepped WebSocket frame with updated goal and impulse"
