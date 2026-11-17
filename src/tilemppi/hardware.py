@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import platform
 import shutil
-import subprocess
+import subprocess  # nosec B404
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -76,7 +76,7 @@ def _detect_cpu_info() -> tuple[str, int, bool]:
                         cpu_model = line.split(":", 1)[1].strip()
                         break
                 avx512 = "avx512f" in text.lower()
-            except OSError:
+            except OSError:  # nosec B110
                 pass
     elif platform.system() == "Windows":
         env_ident = os.environ.get("PROCESSOR_IDENTIFIER", "")
@@ -92,7 +92,7 @@ def _detect_cpu_info() -> tuple[str, int, bool]:
                 val, _ = winreg.QueryValueEx(key, "ProcessorNameString")
                 if isinstance(val, str) and val.strip():
                     cpu_model = val.strip()
-        except Exception:
+        except Exception:  # nosec B110
             pass
 
     lower_model = cpu_model.lower()

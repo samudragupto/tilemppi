@@ -43,7 +43,7 @@ def _query_vram_mb(active_backend: BackendKind) -> float:
                 reserved = float(torch.cuda.memory_reserved(0)) / (1024.0 * 1024.0)
                 allocated = float(torch.cuda.memory_allocated(0)) / (1024.0 * 1024.0)
                 return round(max(reserved, allocated, 12.5), 2)
-        except Exception:
+        except Exception:  # nosec B110
             pass
     return 0.0
 

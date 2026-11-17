@@ -11,6 +11,7 @@ from tilemppi.hardware import (
     ADA_RTX4060_L2_BYTES,
     BackendSelector,
     HardwareCapabilities,
+    _infer_cache_and_roofline,
     detect_hardware,
 )
 from tilemppi.l2_budget import (
@@ -184,3 +185,60 @@ def test_hardware_detection_and_backend_selector() -> None:
     # Selecting CUTILE resolves to CUTILE on sm_100+ or CUTILE_SIM on sm_89/CPU
     resolved_cutile = BackendSelector.resolve(BackendKind.CUTILE, caps)
     assert resolved_cutile in (BackendKind.CUTILE, BackendKind.CUTILE_SIM)
+
+
+def test_hardware_roofline_inference_and_cpu_fallbacks() -> None:
+    # CPU-only mode
+    cpu_r = _infer_cache_and_roofline(False, "CPU", (0, 0), 0)
+    assert cpu_r[0] == ADA_RTX4060_L2_BYTES
+
+    # Blackwell sm_100
+    bw_r = _infer_cache_and_roofline(True, "NVIDIA B200", (10, 0), 0)
+    assert bw_r[0] == 64 * 1024 * 1024
+    assert bw_r[5] == 360.0
+
+    # Ada sm_89 RTX 4060
+    ada_r = _infer_cache_and_roofline(True, "NVIDIA GeForce RTX 4060 Laptop GPU", (8, 9), 0)
+    assert ada_r[0] == ADA_RTX4060_L2_BYTES
+    assert ada_r[1] == 256.0
+
+    # Ampere sm_80 & Turing sm_75
+    amp_r = _infer_cache_and_roofline(True, "NVIDIA A100", (8, 0), 0)
+    assert amp_r[0] == 16 * 1024 * 1024
+    tur_r = _infer_cache_and_roofline(True, "NVIDIA T4", (7, 5), 0)
+    assert tur_r[0] == 6 * 1024 * 1024
+
+    # Simulated CPU-only HardwareCapabilities fallback resolution
+    cpu_caps = HardwareCapabilities(
+        os_name="Linux",
+        os_release="6.8",
+        python_version="3.12.0",
+        cpu_model="CPU",
+        cpu_cores_logical=4,
+        avx512_supported=False,
+        gpu_detected=False,
+        gpu_name="No GPU Detected (CPU Mode)",
+        compute_capability=(0, 0),
+        sm_count=0,
+        vram_total_mb=0.0,
+        l2_cache_bytes=ADA_RTX4060_L2_BYTES,
+        l2_cache_mb=32.0,
+        dram_bandwidth_gbps=64.0,
+        l2_bandwidth_gbps=512.0,
+        peak_fp32_tflops=0.8,
+        peak_fp16_tflops=1.6,
+        peak_fp8_tflops=1.6,
+        cutile_module_installed=False,
+        cutile_native_hw_ready=False,
+        cutile_sim_available=True,
+        triton_available=False,
+        torch_installed=False,
+        torch_cuda_available=False,
+        fp8_tensor_core_supported=False,
+        available_backends=(BackendKind.CUTILE_SIM, BackendKind.NUMPY_CPU),
+        recommended_backend=BackendKind.NUMPY_CPU,
+    )
+    assert BackendSelector.resolve(BackendKind.TRITON, cpu_caps) == BackendKind.NUMPY_CPU
+    assert BackendSelector.resolve(BackendKind.TORCH_GPU, cpu_caps) == BackendKind.NUMPY_CPU
+    assert BackendSelector.resolve(BackendKind.TORCH_CPU, cpu_caps) == BackendKind.NUMPY_CPU
+    assert BackendSelector.resolve(BackendKind.CUTILE, cpu_caps) == BackendKind.CUTILE_SIM

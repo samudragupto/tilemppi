@@ -314,7 +314,7 @@ def create_app(
                         snap = runtime.step()
                         await websocket.send_bytes(encode_tmpi_frame(snap))
                         continue
-                except TimeoutError:
+                except TimeoutError:  # nosec B110
                     pass
 
                 if not paused:
