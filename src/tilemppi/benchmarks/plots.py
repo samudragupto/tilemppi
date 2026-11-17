@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 
 from tilemppi.benchmarks.runner import BenchmarkSuiteReport
@@ -15,14 +16,16 @@ def render_l2_cache_residency_svg(report: BenchmarkSuiteReport) -> str:
     entries = report.scaling
     n = max(1, len(entries))
 
-    plot_left, plot_right = 95.0, 870.0
-    plot_top, plot_bottom = 120.0, 390.0
+    plot_left, plot_right = 95.0, 875.0
+    plot_top, plot_bottom = 122.0, 392.0
     plot_h = plot_bottom - plot_top
-    max_mb = max([e.unfused_working_set_mb for e in entries] + [450.0]) * 1.12
+    max_mb = max([e.unfused_working_set_mb for e in entries] + [450.0]) * 1.15
+    log_max = math.log10(1.0 + max_mb)
 
     def y_for_mb(mb: float) -> float:
-        clamped = max(0.0, min(mb, max_mb))
-        return plot_bottom - (clamped / max_mb) * plot_h
+        val = max(0.0, mb)
+        frac = math.log10(1.0 + val) / log_max
+        return plot_bottom - frac * plot_h
 
     l2_y = y_for_mb(32.0)
 
@@ -30,8 +33,8 @@ def render_l2_cache_residency_svg(report: BenchmarkSuiteReport) -> str:
         f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}">',
         '  <rect width="100%" height="100%" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.5"/>',
         f'  <text x="45" y="38" fill="#0f172a" font-family="{FONT_FAMILY}" font-size="18" font-weight="700">RTX 4060 32 MB L2 Cache Residency: Unfused PyTorch vs. Fused TileMPPI</text>',
-        f'  <text x="45" y="60" fill="#475569" font-family="{FONT_FAMILY}" font-size="12.5">Working-set memory footprint per MPPI step (MB) compared against the 32 MB on-chip L2 cache limit</text>',
-        # Legend row (y=86, zero overlap)
+        f'  <text x="45" y="60" fill="#475569" font-family="{FONT_FAMILY}" font-size="12.5">Working-set memory footprint per MPPI step (MB, log scale) vs. the 32 MB on-chip L2 cache ceiling</text>',
+        # Dedicated legend row
         '  <rect x="45" y="76" width="13" height="13" fill="#e11d48" rx="3"/>',
         f'  <text x="64" y="87" fill="#334155" font-family="{FONT_FAMILY}" font-size="12">Unfused PyTorch (DRAM Thrashing)</text>',
         '  <rect x="295" y="76" width="13" height="13" fill="#0d9488" rx="3"/>',
@@ -40,24 +43,28 @@ def render_l2_cache_residency_svg(report: BenchmarkSuiteReport) -> str:
         f'  <text x="590" y="87" fill="#059669" font-family="{FONT_FAMILY}" font-size="12" font-weight="600">32 MB L2 Cache Ceiling</text>',
     ]
 
-    # Gridlines & Y-axis ticks
-    for frac in (0.0, 0.25, 0.5, 0.75, 1.0):
-        val = max_mb * frac
-        yy = y_for_mb(val)
+    # Log-scale reference gridlines
+    for tick_mb in (0, 5, 32, 100, 250, 500):
+        if tick_mb > max_mb:
+            continue
+        yy = y_for_mb(float(tick_mb))
+        is_l2 = tick_mb == 32
+        stroke = "#059669" if is_l2 else "#e2e8f0"
+        s_width = "2" if is_l2 else "1"
+        dash = ' stroke-dasharray="7,5"' if is_l2 else ""
+        t_col = "#059669" if is_l2 else "#64748b"
+        t_weight = ' font-weight="700"' if is_l2 else ""
         lines.append(
-            f'  <line x1="{plot_left}" y1="{yy:.1f}" x2="{plot_right}" y2="{yy:.1f}" stroke="#e2e8f0" stroke-width="1"/>'
+            f'  <line x1="{plot_left}" y1="{yy:.1f}" x2="{plot_right}" y2="{yy:.1f}" stroke="{stroke}" stroke-width="{s_width}"{dash}/>'
         )
         lines.append(
-            f'  <text x="{plot_left - 10}" y="{yy + 4:.1f}" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">{val:.0f} MB</text>'
+            f'  <text x="{plot_left - 10}" y="{yy + 4:.1f}" fill="{t_col}" font-family="{FONT_FAMILY}" font-size="11"{t_weight} text-anchor="end">{tick_mb} MB</text>'
         )
 
-    # Axes
     lines.extend(
         [
             f'  <line x1="{plot_left}" y1="{plot_bottom}" x2="{plot_right}" y2="{plot_bottom}" stroke="#94a3b8" stroke-width="1.5"/>',
             f'  <line x1="{plot_left}" y1="{plot_top}" x2="{plot_left}" y2="{plot_bottom}" stroke="#94a3b8" stroke-width="1.5"/>',
-            # 32 MB L2 line
-            f'  <line x1="{plot_left}" y1="{l2_y:.1f}" x2="{plot_right}" y2="{l2_y:.1f}" stroke="#059669" stroke-width="2" stroke-dasharray="7,5"/>',
             f'  <text x="{plot_right - 6}" y="{l2_y - 7:.1f}" fill="#059669" font-family="{FONT_FAMILY}" font-size="11" font-weight="700" text-anchor="end">32 MB L2 Ceiling</text>',
         ]
     )
@@ -71,19 +78,26 @@ def render_l2_cache_residency_svg(report: BenchmarkSuiteReport) -> str:
         fx = group_cx + 4.0
 
         uy = y_for_mb(e.unfused_working_set_mb)
-        uh = max(4.0, plot_bottom - uy)
+        uh = max(6.0, plot_bottom - uy)
 
-        # Ensure small fused bars (<5 MB) remain clearly visible (>= 8px)
-        fy_raw = y_for_mb(e.fused_working_set_mb)
-        fh = max(8.0, plot_bottom - fy_raw)
+        fy = y_for_mb(e.fused_working_set_mb)
+        fh = max(6.0, plot_bottom - fy)
         fy = plot_bottom - fh
+
+        u_lbl_y = uy - 7.0
+        if abs(u_lbl_y - l2_y) < 12.0:
+            u_lbl_y = l2_y - 11.0
+
+        f_lbl_y = fy - 7.0
+        if abs(f_lbl_y - l2_y) < 12.0:
+            f_lbl_y = fy + 14.0
 
         lines.extend(
             [
                 f'  <rect x="{ux:.1f}" y="{uy:.1f}" width="{bar_w:.1f}" height="{uh:.1f}" fill="#e11d48" rx="4" opacity="0.9"/>',
-                f'  <text x="{ux + bar_w / 2:.1f}" y="{uy - 7:.1f}" fill="#be123c" font-family="{FONT_FAMILY}" font-size="11" font-weight="600" text-anchor="middle">{e.unfused_working_set_mb:.0f} MB</text>',
+                f'  <text x="{ux + bar_w / 2:.1f}" y="{u_lbl_y:.1f}" fill="#be123c" font-family="{FONT_FAMILY}" font-size="11" font-weight="600" text-anchor="middle">{e.unfused_working_set_mb:.0f} MB</text>',
                 f'  <rect x="{fx:.1f}" y="{fy:.1f}" width="{bar_w:.1f}" height="{fh:.1f}" fill="#0d9488" rx="4"/>',
-                f'  <text x="{fx + bar_w / 2:.1f}" y="{fy - 7:.1f}" fill="#0f766e" font-family="{FONT_FAMILY}" font-size="11" font-weight="700" text-anchor="middle">{e.fused_working_set_mb:.2f} MB</text>',
+                f'  <text x="{fx + bar_w / 2:.1f}" y="{f_lbl_y:.1f}" fill="#0f766e" font-family="{FONT_FAMILY}" font-size="11" font-weight="700" text-anchor="middle">{e.fused_working_set_mb:.2f} MB</text>',
                 f'  <text x="{group_cx:.1f}" y="{plot_bottom + 22:.1f}" fill="#0f172a" font-family="{FONT_FAMILY}" font-size="12" font-weight="600" text-anchor="middle">K = {e.num_rollouts:,}</text>',
                 f'  <text x="{group_cx:.1f}" y="{plot_bottom + 40:.1f}" fill="#0284c7" font-family="{FONT_FAMILY}" font-size="11" font-weight="600" text-anchor="middle">{e.traffic_reduction_ratio:.0f}x Traffic Cut</text>',
             ]
@@ -114,7 +128,6 @@ def render_throughput_scaling_svg(report: BenchmarkSuiteReport) -> str:
         '  <rect width="100%" height="100%" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.5"/>',
         f'  <text x="45" y="38" fill="#0f172a" font-family="{FONT_FAMILY}" font-size="18" font-weight="700">Parallel-Universe Scaling: Control Frequency (Hz) &amp; Throughput (M-Steps/s)</text>',
         f'  <text x="45" y="60" fill="#475569" font-family="{FONT_FAMILY}" font-size="12.5">Measured on {report.hardware.get("gpu_name", "Host Device")} (Backend: {entries[0].backend if entries else "auto"})</text>',
-        # Legend row
         '  <line x1="45" y1="84" x2="75" y2="84" stroke="#0d9488" stroke-width="3"/>',
         '  <circle cx="60" cy="84" r="4.5" fill="#0d9488"/>',
         f'  <text x="83" y="88" fill="#334155" font-family="{FONT_FAMILY}" font-size="12" font-weight="600">Control Loop Frequency (Hz, Left Axis)</text>',
@@ -175,12 +188,17 @@ def render_throughput_scaling_svg(report: BenchmarkSuiteReport) -> str:
         y_hz = plot_bottom - (e.control_hz / max_hz) * plot_h
         y_ms = plot_bottom - (e.million_steps_per_sec / max_ms) * plot_h
 
-        # Offset labels vertically if markers are close
+        # Keep all labels strictly inside [plot_top, plot_bottom - 8] so they never touch X-axis labels
         hz_label_y = y_hz - 12.0
-        ms_label_y = y_ms + 18.0
-        if abs(y_hz - y_ms) < 22.0 and y_ms < y_hz:
-            ms_label_y = y_ms - 12.0
-            hz_label_y = y_hz + 18.0
+        ms_label_y = y_ms - 12.0 if y_ms > plot_bottom - 30.0 else y_ms + 18.0
+
+        if abs(hz_label_y - ms_label_y) < 16.0:
+            if y_hz <= y_ms:
+                hz_label_y = y_hz - 14.0
+                ms_label_y = min(plot_bottom - 8.0, y_ms + 18.0)
+            else:
+                ms_label_y = y_ms - 14.0
+                hz_label_y = min(plot_bottom - 8.0, y_hz + 18.0)
 
         lines.extend(
             [
@@ -212,14 +230,12 @@ def render_roofline_rtx4060_svg(report: BenchmarkSuiteReport) -> str:
         '  <rect width="100%" height="100%" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.5"/>',
         f'  <text x="45" y="38" fill="#0f172a" font-family="{FONT_FAMILY}" font-size="18" font-weight="700">RTX 4060 (Ada sm_89) Roofline Analysis: DRAM-Bound vs. L2-Resident TileMPPI</text>',
         f'  <text x="45" y="60" fill="#475569" font-family="{FONT_FAMILY}" font-size="12.5">Arithmetic Intensity (FLOP/Byte) vs. Compute Ceiling (256 GB/s GDDR6 DRAM vs. 1.65 TB/s 32 MB L2 Cache)</text>',
-        # Legend row
         '  <line x1="45" y1="84" x2="75" y2="84" stroke="#e11d48" stroke-width="2.5" stroke-dasharray="6,4"/>',
         f'  <text x="83" y="88" fill="#334155" font-family="{FONT_FAMILY}" font-size="12">GDDR6 DRAM Roof (256 GB/s, 15.1 TFLOPS)</text>',
         '  <line x1="365" y1="84" x2="395" y2="84" stroke="#0d9488" stroke-width="3"/>',
         f'  <text x="403" y="88" fill="#0f766e" font-family="{FONT_FAMILY}" font-size="12" font-weight="600">32 MB L2 Roof (1.65 TB/s, 60-120 TFLOPS Tensor Core)</text>',
     ]
 
-    # Subtle background grid
     for yy in (150, 210, 270, 330):
         lines.append(
             f'  <line x1="{plot_left}" y1="{yy}" x2="{plot_right}" y2="{yy}" stroke="#f1f5f9" stroke-width="1"/>'
@@ -233,43 +249,41 @@ def render_roofline_rtx4060_svg(report: BenchmarkSuiteReport) -> str:
         [
             f'  <line x1="{plot_left}" y1="{plot_bottom}" x2="{plot_right}" y2="{plot_bottom}" stroke="#94a3b8" stroke-width="1.5"/>',
             f'  <line x1="{plot_left}" y1="{plot_top}" x2="{plot_left}" y2="{plot_bottom}" stroke="#94a3b8" stroke-width="1.5"/>',
-            # Y-axis labels
             f'  <text x="{plot_left - 10}" y="154" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">100 TF</text>',
-            f'  <text x="{plot_left - 10}" y="214" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">15 TF</text>',
-            f'  <text x="{plot_left - 10}" y="274" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">1 TF</text>',
-            f'  <text x="{plot_left - 10}" y="334" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">100 GF</text>',
-            # X-axis labels (log scale)
+            f'  <text x="{plot_left - 10}" y="244" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">15 TF</text>',
+            f'  <text x="{plot_left - 10}" y="304" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">1 TF</text>',
+            f'  <text x="{plot_left - 10}" y="364" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="end">100 GF</text>',
             f'  <text x="160" y="{plot_bottom + 20}" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="middle">1 FLOP/B</text>',
             f'  <text x="330" y="{plot_bottom + 20}" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="middle">10 FLOP/B</text>',
-            f'  <text x="530" y="{plot_bottom + 20}" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="middle">100 FLOP/B</text>',
-            f'  <text x="740" y="{plot_bottom + 20}" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="middle">500+ FLOP/B</text>',
-            # DRAM Roofline
-            '  <polyline fill="none" stroke="#e11d48" stroke-width="2.5" stroke-dasharray="6,4" points="115,368 430,210 845,210"/>',
-            f'  <text x="840" y="227" fill="#be123c" font-family="{FONT_FAMILY}" font-size="11" font-weight="600" text-anchor="end">GDDR6 DRAM Ceiling (15.1 TFLOPS FP32)</text>',
-            # L2 Roofline
-            '  <polyline fill="none" stroke="#0d9488" stroke-width="3" points="115,315 390,145 845,145"/>',
-            f'  <text x="840" y="137" fill="#0f766e" font-family="{FONT_FAMILY}" font-size="11" font-weight="700" text-anchor="end">32 MB L2 + Ada Tensor Core Ceiling</text>',
+            f'  <text x="560" y="{plot_bottom + 20}" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="middle">100 FLOP/B</text>',
+            f'  <text x="760" y="{plot_bottom + 20}" fill="#64748b" font-family="{FONT_FAMILY}" font-size="11" text-anchor="middle">500+ FLOP/B</text>',
+            # DRAM Roofline at y=242 (well separated from L2 points at y=175..195)
+            '  <polyline fill="none" stroke="#e11d48" stroke-width="2.5" stroke-dasharray="6,4" points="115,378 410,242 845,242"/>',
+            f'  <text x="840" y="260" fill="#be123c" font-family="{FONT_FAMILY}" font-size="11" font-weight="600" text-anchor="end">GDDR6 DRAM Ceiling (15.1 TFLOPS FP32)</text>',
+            # L2 Roofline at y=142
+            '  <polyline fill="none" stroke="#0d9488" stroke-width="3" points="115,315 390,142 845,142"/>',
+            f'  <text x="840" y="134" fill="#0f766e" font-family="{FONT_FAMILY}" font-size="11" font-weight="700" text-anchor="end">32 MB L2 + Ada Tensor Core Ceiling</text>',
             # Unfused PyTorch point
-            '  <circle cx="245" cy="303" r="7.5" fill="#e11d48" stroke="#ffffff" stroke-width="1.5"/>',
-            f'  <text x="258" y="307" fill="#be123c" font-family="{FONT_FAMILY}" font-size="11.5" font-weight="700">Unfused PyTorch (~4.3 FLOP/B, DRAM-Bound)</text>',
+            '  <circle cx="240" cy="318" r="7.5" fill="#e11d48" stroke="#ffffff" stroke-width="1.5"/>',
+            f'  <text x="254" y="322" fill="#be123c" font-family="{FONT_FAMILY}" font-size="11.5" font-weight="700">Unfused PyTorch (~4.3 FLOP/B, DRAM-Bound)</text>',
         ]
     )
 
     colors = {"fp32": "#0284c7", "fp16": "#0d9488", "fp8": "#059669"}
-    x_positions = [555.0, 680.0, 795.0]
-    y_positions = [188.0, 166.0, 188.0]
+    # Order points monotonically by X-axis arithmetic intensity: FP16 (~220) -> FP32 (~437) -> FP8 (~437+)
+    sorted_prec = sorted(prec_entries[:3], key=lambda item: item.fused_arithmetic_intensity)
+    x_positions = [565.0, 695.0, 810.0]
+    y_positions = [192.0, 178.0, 192.0]
 
-    for idx, p in enumerate(prec_entries[:3]):
+    for idx, p in enumerate(sorted_prec):
         cx = x_positions[idx]
         cy = y_positions[idx]
         col = colors.get(p.precision, "#0d9488")
-        lbl_y = cy - 14.0 if idx != 1 else cy - 12.0
-        val_y = cy + 20.0
         lines.extend(
             [
                 f'  <circle cx="{cx:.1f}" cy="{cy:.1f}" r="7.5" fill="{col}" stroke="#ffffff" stroke-width="1.5"/>',
-                f'  <text x="{cx:.1f}" y="{lbl_y:.1f}" fill="{col}" font-family="{FONT_FAMILY}" font-size="11.5" font-weight="700" text-anchor="middle">TileMPPI {p.precision.upper()}</text>',
-                f'  <text x="{cx:.1f}" y="{val_y:.1f}" fill="#334155" font-family="{FONT_FAMILY}" font-size="11" font-weight="600" text-anchor="middle">{p.fused_arithmetic_intensity:.0f} FLOP/B</text>',
+                f'  <text x="{cx:.1f}" y="{cy - 13:.1f}" fill="{col}" font-family="{FONT_FAMILY}" font-size="11.5" font-weight="700" text-anchor="middle">TileMPPI {p.precision.upper()}</text>',
+                f'  <text x="{cx:.1f}" y="{cy + 20:.1f}" fill="#334155" font-family="{FONT_FAMILY}" font-size="11" font-weight="600" text-anchor="middle">{p.fused_arithmetic_intensity:.0f} FLOP/B</text>',
             ]
         )
 
@@ -305,7 +319,6 @@ def render_impulse_recovery_svg(report: BenchmarkSuiteReport) -> str:
         '  <rect width="100%" height="100%" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.5"/>',
         f'  <text x="45" y="38" fill="#0f172a" font-family="{FONT_FAMILY}" font-size="18" font-weight="700">Closed-Loop Impulse Shove Disturbance Rejection &amp; SDF Clearance</text>',
         f'  <text x="45" y="60" fill="#475569" font-family="{FONT_FAMILY}" font-size="12.5">External wrench impulse injected at Step 8 (shaded band) followed by active stabilization &amp; collision avoidance</text>',
-        # Legend row
         '  <line x1="45" y1="84" x2="72" y2="84" stroke="#e11d48" stroke-width="2.8"/>',
         f'  <text x="80" y="88" fill="#334155" font-family="{FONT_FAMILY}" font-size="12" font-weight="600">Attitude Tilt (deg, Left)</text>',
         '  <line x1="255" y1="84" x2="282" y2="84" stroke="#0284c7" stroke-width="2.8"/>',

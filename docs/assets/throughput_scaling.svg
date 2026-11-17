@@ -12,46 +12,46 @@
   <text x="85.0" y="399.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">0 Hz</text>
   <text x="835.0" y="399.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">0.0 M/s</text>
   <line x1="95.0" y1="327.5" x2="825.0" y2="327.5" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="85.0" y="331.5" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">9 Hz</text>
-  <text x="835.0" y="331.5" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">3.9 M/s</text>
+  <text x="85.0" y="331.5" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">10 Hz</text>
+  <text x="835.0" y="331.5" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">3.8 M/s</text>
   <line x1="95.0" y1="260.0" x2="825.0" y2="260.0" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="85.0" y="264.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">19 Hz</text>
-  <text x="835.0" y="264.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">7.8 M/s</text>
+  <text x="85.0" y="264.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">20 Hz</text>
+  <text x="835.0" y="264.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">7.6 M/s</text>
   <line x1="95.0" y1="192.5" x2="825.0" y2="192.5" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="85.0" y="196.5" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">28 Hz</text>
-  <text x="835.0" y="196.5" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">11.6 M/s</text>
+  <text x="85.0" y="196.5" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">30 Hz</text>
+  <text x="835.0" y="196.5" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">11.4 M/s</text>
   <line x1="95.0" y1="125.0" x2="825.0" y2="125.0" stroke="#e2e8f0" stroke-width="1"/>
-  <text x="85.0" y="129.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">38 Hz</text>
-  <text x="835.0" y="129.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">15.5 M/s</text>
+  <text x="85.0" y="129.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="end">40 Hz</text>
+  <text x="835.0" y="129.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" text-anchor="start">15.2 M/s</text>
   <line x1="95.0" y1="395.0" x2="825.0" y2="395.0" stroke="#94a3b8" stroke-width="1.5"/>
   <line x1="95.0" y1="125.0" x2="95.0" y2="395.0" stroke="#94a3b8" stroke-width="1.5"/>
   <line x1="825.0" y1="125.0" x2="825.0" y2="395.0" stroke="#94a3b8" stroke-width="1.5"/>
-  <polyline fill="none" stroke="#0d9488" stroke-width="3" points="150.0,191.7 305.0,174.7 460.0,170.0 615.0,191.9 770.0,219.5"/>
-  <polyline fill="none" stroke="#0284c7" stroke-width="3" stroke-dasharray="7,4" points="150.0,390.9 305.0,377.3 460.0,322.9 615.0,264.8 770.0,170.0"/>
-  <circle cx="150.0" cy="191.7" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="150.0" y="179.7" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">28.6 Hz</text>
-  <circle cx="150.0" cy="390.9" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="150.0" y="408.9" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">0.23 M/s</text>
+  <polyline fill="none" stroke="#0d9488" stroke-width="3" points="150.0,195.3 305.0,170.0 460.0,183.0 615.0,198.2 770.0,229.8"/>
+  <polyline fill="none" stroke="#0284c7" stroke-width="3" stroke-dasharray="7,4" points="150.0,390.7 305.0,375.9 460.0,322.8 615.0,261.0 770.0,170.0"/>
+  <circle cx="150.0" cy="195.3" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="150.0" y="183.3" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">29.2 Hz</text>
+  <circle cx="150.0" cy="390.7" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="150.0" y="378.7" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">0.24 M/s</text>
   <text x="150.0" y="419.0" fill="#0f172a" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">K = 256</text>
-  <circle cx="305.0" cy="174.7" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="305.0" y="162.7" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">30.9 Hz</text>
-  <circle cx="305.0" cy="377.3" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="305.0" y="395.3" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">1.01 M/s</text>
+  <circle cx="305.0" cy="170.0" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="305.0" y="158.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">32.9 Hz</text>
+  <circle cx="305.0" cy="375.9" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="305.0" y="363.9" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">1.08 M/s</text>
   <text x="305.0" y="419.0" fill="#0f172a" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">K = 1,024</text>
-  <circle cx="460.0" cy="170.0" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="460.0" y="158.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">31.6 Hz</text>
-  <circle cx="460.0" cy="322.9" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="460.0" y="340.9" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">4.14 M/s</text>
+  <circle cx="460.0" cy="183.0" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="460.0" y="171.0" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">31.0 Hz</text>
+  <circle cx="460.0" cy="322.8" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="460.0" y="340.8" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">4.07 M/s</text>
   <text x="460.0" y="419.0" fill="#0f172a" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">K = 4,096</text>
-  <circle cx="615.0" cy="191.9" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="615.0" y="179.9" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">28.5 Hz</text>
-  <circle cx="615.0" cy="264.8" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="615.0" y="282.8" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">7.47 M/s</text>
+  <circle cx="615.0" cy="198.2" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="615.0" y="186.2" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">28.8 Hz</text>
+  <circle cx="615.0" cy="261.0" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="615.0" y="279.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">7.55 M/s</text>
   <text x="615.0" y="419.0" fill="#0f172a" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">K = 8,192</text>
-  <circle cx="770.0" cy="219.5" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="770.0" y="207.5" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">24.6 Hz</text>
+  <circle cx="770.0" cy="229.8" r="5.5" fill="#0d9488" stroke="#ffffff" stroke-width="1.5"/>
+  <text x="770.0" y="217.8" fill="#0f766e" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" text-anchor="middle">24.2 Hz</text>
   <circle cx="770.0" cy="170.0" r="5.5" fill="#0284c7" stroke="#ffffff" stroke-width="1.5"/>
-  <text x="770.0" y="188.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">12.92 M/s</text>
+  <text x="770.0" y="188.0" fill="#0369a1" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="11" font-weight="600" text-anchor="middle">12.68 M/s</text>
   <text x="770.0" y="419.0" fill="#0f172a" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="600" text-anchor="middle">K = 16,384</text>
   <text x="460.0" y="458" fill="#475569" font-family="Inter, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif" font-size="12" text-anchor="middle">Parallel Rollout Count (K)</text>
 </svg>
