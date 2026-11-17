@@ -115,9 +115,9 @@ class Quadrotor3D(RobotModel):
         f3 = u[..., 3]
 
         total_thrust = f0 + f1 + f2 + f3
-        tau_x = self.arm_eff * (f0 - f1 - f2 + f3)
-        tau_y = self.arm_eff * (f0 + f1 - f2 - f3)
-        tau_z = self.yaw_coeff * (f0 - f1 + f2 - f3)
+        tau_x = self.arm_eff * (f0 - f1 - f2 + f3) - np.float32(0.35) * qx
+        tau_y = self.arm_eff * (f0 + f1 - f2 - f3) - np.float32(0.35) * qy
+        tau_z = self.yaw_coeff * (f0 - f1 + f2 - f3) - np.float32(0.15) * qz
 
         # Body +Z unit vector in world frame from quaternion R(q)[:, 2]
         bz_x = np.float32(2.0) * (qx * qz + qw * qy)
@@ -185,8 +185,8 @@ class Quadrotor3D(RobotModel):
 
         wp_err = pos - waypoint.reshape(1, 3)
         goal_err = pos - goal.reshape(1, 3)
-        wp_cost = np.float32(18.0) * np.sum(wp_err * wp_err, axis=-1)
-        goal_pull = np.float32(4.0) * np.sum(goal_err * goal_err, axis=-1)
+        wp_cost = np.float32(28.0) * np.sum(wp_err * wp_err, axis=-1)
+        goal_pull = np.float32(1.0) * np.sum(goal_err * goal_err, axis=-1)
 
         # Upright tilt penalty: 1 - bz_z = 2*(qx^2 + qy^2)
         tilt_cost = np.float32(14.0) * (quat[..., 1] ** 2 + quat[..., 2] ** 2)

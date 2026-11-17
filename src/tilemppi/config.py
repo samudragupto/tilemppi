@@ -20,9 +20,9 @@ class SDFConfig(BaseModel):
 
     max_obstacles: int = Field(default=32, ge=4, le=128)
     robot_radius: float = Field(default=0.28, gt=0.01, le=2.0)
-    safety_margin: float = Field(default=0.22, ge=0.0, le=2.0)
-    hard_barrier_weight: float = Field(default=950.0, ge=0.0, le=100000.0)
-    soft_barrier_weight: float = Field(default=18.0, ge=0.0, le=10000.0)
+    safety_margin: float = Field(default=0.28, ge=0.0, le=2.0)
+    hard_barrier_weight: float = Field(default=1600.0, ge=0.0, le=100000.0)
+    soft_barrier_weight: float = Field(default=45.0, ge=0.0, le=10000.0)
     soft_decay_alpha: float = Field(default=5.5, gt=0.1, le=50.0)
     smooth_min_k: float = Field(default=12.0, gt=0.5, le=100.0)
     arena_bounds: tuple[float, float, float] = Field(default=(8.0, 8.0, 5.0))

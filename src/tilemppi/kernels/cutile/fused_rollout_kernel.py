@@ -127,10 +127,10 @@ def fused_quadrotor_mppi_kernel(
 
         wp_err = pos_t - wp_b
         goal_err = pos_t - goal_b
-        wp_c = ct.full((TILE_K, 1), 18.0, dtype=ct.float32) * ct.sum(
+        wp_c = ct.full((TILE_K, 1), 28.0, dtype=ct.float32) * ct.sum(
             wp_err * wp_err, axis=-1, keepdims=True
         )
-        gl_c = ct.full((TILE_K, 1), 4.0, dtype=ct.float32) * ct.sum(
+        gl_c = ct.full((TILE_K, 1), 1.0, dtype=ct.float32) * ct.sum(
             goal_err * goal_err, axis=-1, keepdims=True
         )
 
@@ -174,7 +174,7 @@ def fused_quadrotor_mppi_kernel(
     qy_f = ct.extract(x_tile, index=(0, 5), shape=(TILE_K, 1))
     vel_f = ct.extract(x_tile, index=(0, 7), shape=(TILE_K, 3))
     omg_f = ct.extract(x_tile, index=(0, 10), shape=(TILE_K, 3))
-    err_f = pos_f - goal_b
+    err_f = pos_f - wp_b
 
     term_c = (
         ct.full((TILE_K, 1), 95.0, dtype=ct.float32) * ct.sum(err_f * err_f, axis=-1, keepdims=True)
@@ -359,7 +359,7 @@ def fused_quadruped_mppi_kernel(
     qx_f = ct.extract(x_tile, index=(0, 4), shape=(TILE_K, 1))
     qy_f = ct.extract(x_tile, index=(0, 5), shape=(TILE_K, 1))
     vel_f = ct.extract(x_tile, index=(0, 7), shape=(TILE_K, 3))
-    err_f = pos_f - goal_b
+    err_f = pos_f - wp_b
 
     term_c = (
         ct.full((TILE_K, 1), 110.0, dtype=ct.float32)
@@ -496,7 +496,7 @@ def fused_swarm_mppi_kernel(
         cost_tile = cost_tile + ct.reshape(step_c, (TILE_K, 1))
         u_prev = u_t
 
-    term_c = _SWARM_MODEL.terminal_cost(x_tile, goal_vec)
+    term_c = _SWARM_MODEL.terminal_cost(x_tile, wp_vec)
     cost_tile = cost_tile + ct.reshape(term_c, (TILE_K, 1))
 
     if cvar_weight > 0.0:

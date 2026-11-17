@@ -199,7 +199,7 @@ def fused_rollout_cpu(
         costs = costs + step_c
         u_prev = u_t
 
-    costs = costs + model.terminal_cost(x, gl)
+    costs = costs + model.terminal_cost(x, wp)
 
     # Trajectory-level worst-case CVaR clearance penalty (strictly per-rollout -> TILE_K invariant!)
     if mppi_cfg.cvar_weight > 0.0:
