@@ -134,7 +134,7 @@ def _probe_nvidia_smi() -> tuple[bool, str, tuple[int, int], float]:
                 minor = int(cc_parts[1]) if len(cc_parts) > 1 else 0
                 vram_mb = float(parts[2])
                 return True, name, (major, minor), vram_mb
-    except Exception:
+    except Exception:  # nosec B110
         pass
     return False, "No GPU Detected (CPU Mode)", (0, 0), 0.0
 
@@ -216,7 +216,7 @@ def detect_hardware(force_refresh: bool = False) -> HardwareCapabilities:
             sm_count = int(getattr(props, "multi_processor_count", 24))
             vram_total_mb = float(props.total_memory) / (1024.0 * 1024.0)
             reported_l2_bytes = int(getattr(props, "L2_cache_size", 0) or 0)
-    except Exception:
+    except Exception:  # nosec B110
         pass
 
     if not gpu_detected:
